@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use image::{Rgba, RgbaImage};
 use tray_icon::{
     Icon, TrayIcon, TrayIconBuilder,
     menu::{Menu, MenuId, MenuItem, PredefinedMenuItem, Submenu},
@@ -15,14 +16,18 @@ pub(crate) fn build_tray_icon(menu: &Menu) -> TrayIcon {
         .expect("Failed to build tray icon")
 }
 
-fn load_icon() -> Icon {
+fn base_icon_image() -> RgbaImage {
     #[cfg(target_os = "windows")]
-    let bytes = include_bytes!("./tray_colored.png");
+    let bytes: &[u8] = include_bytes!("./tray_colored.png");
     #[cfg(all(not(target_os = "windows")))]
-    let bytes = include_bytes!("./tray.png");
-    let image = image::load_from_memory_with_format(bytes, image::ImageFormat::Png)
+    let bytes: &[u8] = include_bytes!("./tray.png");
+    image::load_from_memory_with_format(bytes, image::ImageFormat::Png)
         .expect("Failed to load icon bytes")
-        .to_rgba8();
+        .to_rgba8()
+}
+
+fn load_icon() -> Icon {
+    let image = base_icon_image();
     let (width, height) = image.dimensions();
     Icon::from_rgba(image.into_raw(), width, height).unwrap()
 }
@@ -155,5 +160,88 @@ impl ImpactorTray {
 
     pub(crate) fn get_action(&self, id: &MenuId) -> Option<&TrayAction> {
         self.action_map.get(id)
+    }
+
+    pub(crate) fn set_signing_progress(&mut self, progress: i32) {
+        let Some(tray_icon) = &self.icon else { return };
+        let clamped = progress.clamp(0, 100);
+        if let Some(icon) = render_progress_icon(clamped) {
+            let _ = tray_icon.set_icon(Some(icon));
+        }
+        let _ = tray_icon.set_title(Some(&format!(" {clamped}%")));
+    }
+
+    pub(crate) fn clear_signing_progress(&mut self) {
+        let Some(tray_icon) = &self.icon else { return };
+        let _ = tray_icon.set_icon(Some(load_icon()));
+        let _ = tray_icon.set_title(None::<&str>);
+    }
+}
+
+// Pill bar geometry, in pixels of the base 64-tall icon. The base tray.png is
+// 64×64; we render a wider canvas next to it so macOS shows a track + fill
+// alongside the glyph. Template mode means only alpha drives the rendered color.
+const BAR_GAP: u32 = 14;
+const BAR_WIDTH: u32 = 132;
+const BAR_HEIGHT: u32 = 12;
+const BAR_TRACK_ALPHA: u8 = 70;
+const BAR_FILL_ALPHA: u8 = 255;
+
+fn render_progress_icon(percent: i32) -> Option<Icon> {
+    let base = base_icon_image();
+    let (bw, bh) = base.dimensions();
+
+    let total_w = bw + BAR_GAP + BAR_WIDTH;
+    let mut canvas = RgbaImage::new(total_w, bh);
+
+    for (x, y, p) in base.enumerate_pixels() {
+        canvas.put_pixel(x, y, *p);
+    }
+
+    let bar_x0 = bw + BAR_GAP;
+    let bar_y0 = (bh - BAR_HEIGHT) / 2;
+    draw_rounded_pill(&mut canvas, bar_x0, bar_y0, BAR_WIDTH, BAR_HEIGHT, BAR_TRACK_ALPHA);
+
+    let fill_w = (percent.clamp(0, 100) as u32 * BAR_WIDTH) / 100;
+    if fill_w > 0 {
+        draw_rounded_pill(&mut canvas, bar_x0, bar_y0, fill_w.max(BAR_HEIGHT), BAR_HEIGHT, BAR_FILL_ALPHA);
+    }
+
+    Icon::from_rgba(canvas.into_raw(), total_w, bh).ok()
+}
+
+fn draw_rounded_pill(canvas: &mut RgbaImage, x0: u32, y0: u32, w: u32, h: u32, alpha: u8) {
+    if w == 0 || h == 0 {
+        return;
+    }
+    let radius = (h as f32) / 2.0;
+    let cw = canvas.width();
+    let ch = canvas.height();
+    for y in 0..h {
+        for x in 0..w {
+            let px = x0 + x;
+            let py = y0 + y;
+            if px >= cw || py >= ch {
+                continue;
+            }
+            let inside = if x < (radius as u32) {
+                let cx = radius;
+                let cy = radius;
+                let dx = (x as f32) - cx + 0.5;
+                let dy = (y as f32) - cy + 0.5;
+                dx * dx + dy * dy <= radius * radius
+            } else if x >= w - (radius as u32) {
+                let cx = (w as f32) - radius;
+                let cy = radius;
+                let dx = (x as f32) - cx + 0.5;
+                let dy = (y as f32) - cy + 0.5;
+                dx * dx + dy * dy <= radius * radius
+            } else {
+                true
+            };
+            if inside {
+                canvas.put_pixel(px, py, Rgba([255, 255, 255, alpha]));
+            }
+        }
     }
 }

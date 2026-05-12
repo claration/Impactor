@@ -615,6 +615,25 @@ impl Impactor {
             }
             Message::ProgressScreen(msg) => {
                 if let ImpactorScreen::Progress(ref mut screen) = self.current_screen {
+                    match &msg {
+                        progress::Message::InstallationProgress(_, progress_val) => {
+                            if let Some(tray) = &mut self.tray {
+                                if *progress_val < 0 || *progress_val >= 100 {
+                                    tray.clear_signing_progress();
+                                } else {
+                                    tray.set_signing_progress(*progress_val);
+                                }
+                            }
+                        }
+                        progress::Message::InstallationError(_)
+                        | progress::Message::InstallationFinished => {
+                            if let Some(tray) = &mut self.tray {
+                                tray.clear_signing_progress();
+                            }
+                        }
+                        _ => {}
+                    }
+
                     match msg {
                         progress::Message::Back => Task::done(Message::PreviousScreen),
                         progress::Message::InstallationFinished => {
