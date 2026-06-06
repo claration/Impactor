@@ -75,7 +75,7 @@ impl Default for AnisetteConfiguration {
 
 impl AnisetteConfiguration {
     pub fn new() -> AnisetteConfiguration {
-        let anisette_url_v3 = std::env::var("PLUME_ANISETTE_URL")
+        let anisette_url_v3 = std::env::var("ANISETTE_URL_V3")
             .unwrap_or_else(|_| DEFAULT_ANISETTE_URL_V3.to_string());
         AnisetteConfiguration {
             anisette_url: DEFAULT_ANISETTE_URL.to_string(),
