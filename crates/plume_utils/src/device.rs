@@ -394,7 +394,7 @@ pub async fn get_device_for_id(device_id: &str) -> Result<Device, Error> {
         .get_devices()
         .await?
         .into_iter()
-        .find(|d| d.device_id.to_string() == device_id)
+        .find(|d| d.device_id.to_string() == device_id || d.udid == device_id)
         .ok_or_else(|| Error::Other(format!("Device ID {device_id} not found")))?;
 
     Ok(Device::new(usbmuxd_device).await)
