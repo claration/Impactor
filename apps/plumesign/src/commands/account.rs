@@ -141,13 +141,48 @@ pub async fn get_authenticated_account() -> Result<DeveloperSession> {
 }
 
 async fn login(args: LoginArgs) -> Result<()> {
-    let tfa_closure = || -> std::result::Result<String, String> {
-        log::info!("Enter 2FA code: ");
+    let tfa_closure = |req: plume_core::auth::TwoFactorRequest| -> std::result::Result<
+        plume_core::auth::TwoFactorAction,
+        String,
+    > {
+        use plume_core::auth::{TwoFactorAction, TwoFactorMethod};
+
+        let can_use_sms = !req.trusted_phone_numbers.is_empty();
+        match req.method {
+            TwoFactorMethod::Sms => log::info!("Enter the code sent via SMS: "),
+            TwoFactorMethod::Device if can_use_sms => {
+                log::info!("Enter the code sent to your device, or type 'sms' to receive it by text message: ")
+            }
+            TwoFactorMethod::Device => log::info!("Enter 2FA code: "),
+        }
+
         let mut input = String::new();
         std::io::stdin()
             .read_line(&mut input)
             .map_err(|e| e.to_string())?;
-        std::result::Result::Ok(input.trim().to_string())
+        let input = input.trim();
+
+        if input.eq_ignore_ascii_case("sms") && can_use_sms {
+            let id = if req.trusted_phone_numbers.len() == 1 {
+                req.trusted_phone_numbers[0].id
+            } else {
+                let labels: Vec<String> = req
+                    .trusted_phone_numbers
+                    .iter()
+                    .map(|p| format!("Phone ending in {}", p.last_two_digits))
+                    .collect();
+                let choice = Select::new()
+                    .with_prompt("Send SMS to which number?")
+                    .items(&labels)
+                    .default(0)
+                    .interact()
+                    .map_err(|e| e.to_string())?;
+                req.trusted_phone_numbers[choice].id
+            };
+            return std::result::Result::Ok(TwoFactorAction::SendSms(id));
+        }
+
+        std::result::Result::Ok(TwoFactorAction::SubmitCode(input.to_string()))
     };
 
     let anisette_config = AnisetteConfiguration::default().set_configuration_path(get_data_path());
