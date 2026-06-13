@@ -512,14 +512,15 @@ impl PackageScreen {
                 let tweak_row = row![
                     text(tweak.file_name().and_then(|n| n.to_str()).unwrap_or("???"))
                         .size(12)
-                        .width(Fill),
+                        .width(Fill)
+                        .wrapping(text::Wrapping::WordOrGlyph),
                     button(appearance::icon(appearance::MINUS))
                         .on_press(Message::RemoveTweak(i))
                         .style(appearance::s_button)
                         .padding(6)
                 ]
                 .spacing(8)
-                .align_y(Alignment::Center);
+                .align_y(Alignment::Start);
 
                 tweak_list = tweak_list.push(tweak_row);
             }
