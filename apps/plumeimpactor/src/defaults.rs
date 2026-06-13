@@ -7,20 +7,6 @@ use iced::window;
 
 use crate::appearance;
 
-pub(crate) const WINDOW_WIDTH: f32 = 575.0;
-pub(crate) const WINDOW_HEIGHT: f32 = 410.0;
-// The installer screen packs in a lot more content (package info, options,
-// tweaks, etc.), so it gets a taller window to avoid forcing the user to scroll.
-pub(crate) const INSTALLER_WINDOW_HEIGHT: f32 = 485.0;
-
-pub(crate) fn default_window_size() -> iced::Size {
-    iced::Size::new(WINDOW_WIDTH, WINDOW_HEIGHT)
-}
-
-pub(crate) fn installer_window_size() -> iced::Size {
-    iced::Size::new(WINDOW_WIDTH, INSTALLER_WINDOW_HEIGHT)
-}
-
 pub(crate) fn default_settings() -> iced::Settings {
     iced::Settings {
         default_font: appearance::p_font(),
@@ -49,7 +35,8 @@ pub(crate) fn default_window_settings() -> window::Settings {
     let platform_specific = window::settings::PlatformSpecific::default();
 
     window::Settings {
-        size: default_window_size(),
+        // Sized to fit the installer screen (the tallest) without scrolling.
+        size: iced::Size::new(575.0, 475.0),
         position: window::Position::Centered,
         exit_on_close_request: false,
         resizable: false,
