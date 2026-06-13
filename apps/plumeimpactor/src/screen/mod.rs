@@ -94,6 +94,7 @@ pub struct Impactor {
     pending_installation: bool,
     certificate_reset_queue: VecDeque<crate::certificate_reset::ConfirmationRequest>,
     selected_locale: Option<String>,
+    current_window_size: iced::Size,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -145,6 +146,7 @@ impl Impactor {
                 pending_installation: false,
                 certificate_reset_queue: VecDeque::new(),
                 selected_locale,
+                current_window_size: defaults::default_window_size(),
             },
             open_task,
         )
@@ -168,6 +170,32 @@ impl Impactor {
     }
 
     pub fn update(&mut self, message: Message) -> Task<Message> {
+        let task = self.update_inner(message);
+        Task::batch([task, self.sync_window_size()])
+    }
+
+    // Resizes the main window to fit the current screen. The installer screen
+    // needs more vertical space, so the window grows when entering it and
+    // shrinks back when leaving.
+    fn sync_window_size(&mut self) -> Task<Message> {
+        let Some(id) = self.main_window else {
+            return Task::none();
+        };
+
+        let desired = match self.current_screen {
+            ImpactorScreen::Installer(_) => defaults::installer_window_size(),
+            _ => defaults::default_window_size(),
+        };
+
+        if desired == self.current_window_size {
+            return Task::none();
+        }
+
+        self.current_window_size = desired;
+        window::resize(id, desired)
+    }
+
+    fn update_inner(&mut self, message: Message) -> Task<Message> {
         match message {
             Message::ComboBoxSelected(value) => {
                 self.selected_device = self
@@ -384,6 +412,7 @@ impl Impactor {
                 } else {
                     let (id, open_task) = window::open(defaults::default_window_settings());
                     self.main_window = Some(id);
+                    self.current_window_size = defaults::default_window_size();
                     open_task.discard()
                 }
             }
