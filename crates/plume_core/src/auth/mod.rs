@@ -138,13 +138,39 @@ pub struct VerifyBody {
 }
 
 #[repr(C)]
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct TrustedPhoneNumber {
     pub number_with_dial_code: String,
     pub last_two_digits: String,
     pub push_mode: String,
     pub id: u32,
+}
+
+/// Channel through which Apple delivered (or will deliver) the 2FA code
+#[derive(Debug, Clone, PartialEq)]
+pub enum TwoFactorMethod {
+    /// Code pushed to the account's trusted devices
+    Device,
+    /// Code sent over SMS to a trusted phone number
+    Sms,
+}
+
+/// Context passed to the 2FA callback so the caller can render the right prompt
+/// and decide whether to fall back to SMS
+#[derive(Debug, Clone)]
+pub struct TwoFactorRequest {
+    pub method: TwoFactorMethod,
+    pub trusted_phone_numbers: Vec<TrustedPhoneNumber>,
+}
+
+/// How the caller chose to respond to a 2FA prompt
+#[derive(Debug, Clone)]
+pub enum TwoFactorAction {
+    /// Submit the verification code the user entered
+    SubmitCode(String),
+    /// Request a fresh code be sent via SMS to the trusted phone number with this id
+    SendSms(u32),
 }
 
 #[derive(Deserialize)]

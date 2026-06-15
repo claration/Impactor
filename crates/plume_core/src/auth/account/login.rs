@@ -10,7 +10,8 @@ use crate::auth::account::{check_error, parse_response};
 use crate::auth::anisette_data::AnisetteData;
 use crate::auth::{
     Account, ChallengeRequest, ChallengeRequestBody, GSA_ENDPOINT, InitRequest, InitRequestBody,
-    LoginState, RequestHeader,
+    LoginState, RequestHeader, TrustedPhoneNumber, TwoFactorAction, TwoFactorMethod,
+    TwoFactorRequest,
 };
 
 #[macro_export]
@@ -45,7 +46,7 @@ macro_rules! plist_get_string {
 impl Account {
     pub async fn login(
         appleid_closure: impl Fn() -> Result<(String, String), String>,
-        tfa_closure: impl Fn() -> Result<String, String>,
+        tfa_closure: impl Fn(TwoFactorRequest) -> Result<TwoFactorAction, String>,
         config: AnisetteConfiguration,
     ) -> Result<Account, Error> {
         let anisette = AnisetteData::new(config).await?;
@@ -54,7 +55,7 @@ impl Account {
 
     pub async fn login_with_anisette<
         F: Fn() -> Result<(String, String), String>,
-        G: Fn() -> Result<String, String>,
+        G: Fn(TwoFactorRequest) -> Result<TwoFactorAction, String>,
     >(
         appleid_closure: F,
         tfa_closure: G,
@@ -66,30 +67,63 @@ impl Account {
         })?;
 
         let mut response = _self.login_email_pass(&username, &password).await?;
+        // Cached so the caller can be offered an SMS fallback even when a trusted
+        // device handled the push. Fetched lazily the first time 2FA is needed.
+        let mut trusted_phone_numbers: Vec<TrustedPhoneNumber> = Vec::new();
 
         loop {
             match response {
-                LoginState::NeedsDevice2FA => response = _self.send_2fa_to_devices().await?,
-                LoginState::Needs2FAVerification => {
-                    response = _self
-                        .verify_2fa(tfa_closure().map_err(|e| {
-                            Error::AuthSrpWithMessage(0, format!("Failed to get 2FA code: {}", e))
-                        })?)
-                        .await?
+                LoginState::NeedsDevice2FA => {
+                    response = _self.send_2fa_to_devices().await?;
+                    if trusted_phone_numbers.is_empty() {
+                        if let Ok(extras) = _self.get_auth_extras().await {
+                            trusted_phone_numbers = extras.trusted_phone_numbers;
+                        }
+                    }
                 }
-                LoginState::NeedsSMS2FA => response = _self.send_sms_2fa_to_devices(1).await?,
+                LoginState::Needs2FAVerification => {
+                    let request = TwoFactorRequest {
+                        method: TwoFactorMethod::Device,
+                        trusted_phone_numbers: trusted_phone_numbers.clone(),
+                    };
+                    match tfa_closure(request).map_err(|e| {
+                        Error::AuthSrpWithMessage(0, format!("Failed to get 2FA code: {}", e))
+                    })? {
+                        TwoFactorAction::SubmitCode(code) => {
+                            response = _self.verify_2fa(code).await?
+                        }
+                        TwoFactorAction::SendSms(id) => {
+                            response = _self.send_sms_2fa_to_devices(id).await?
+                        }
+                    }
+                }
+                LoginState::NeedsSMS2FA => {
+                    if trusted_phone_numbers.is_empty() {
+                        if let Ok(extras) = _self.get_auth_extras().await {
+                            trusted_phone_numbers = extras.trusted_phone_numbers;
+                        }
+                    }
+                    let id = trusted_phone_numbers.first().map(|p| p.id).unwrap_or(1);
+                    response = _self.send_sms_2fa_to_devices(id).await?;
+                }
                 LoginState::NeedsSMS2FAVerification(body) => {
-                    response = _self
-                        .verify_sms_2fa(
-                            tfa_closure().map_err(|e| {
-                                Error::AuthSrpWithMessage(
-                                    0,
-                                    format!("Failed to get SMS 2FA code: {}", e),
-                                )
-                            })?,
-                            body,
+                    let request = TwoFactorRequest {
+                        method: TwoFactorMethod::Sms,
+                        trusted_phone_numbers: trusted_phone_numbers.clone(),
+                    };
+                    match tfa_closure(request).map_err(|e| {
+                        Error::AuthSrpWithMessage(
+                            0,
+                            format!("Failed to get SMS 2FA code: {}", e),
                         )
-                        .await?
+                    })? {
+                        TwoFactorAction::SubmitCode(code) => {
+                            response = _self.verify_sms_2fa(code, body).await?
+                        }
+                        TwoFactorAction::SendSms(id) => {
+                            response = _self.send_sms_2fa_to_devices(id).await?
+                        }
+                    }
                 }
                 LoginState::NeedsLogin => {
                     response = _self.login_email_pass(&username, &password).await?
