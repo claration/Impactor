@@ -169,6 +169,7 @@ pub enum SignerApp {
     StikStore,
     Reynard,
     Ksign,
+    AutoCapture,
 }
 
 impl std::fmt::Display for SignerApp {
@@ -189,6 +190,7 @@ impl std::fmt::Display for SignerApp {
             StikStore => "StikStore",
             Reynard => "Reynard",
             Ksign => "Ksign",
+            AutoCapture => "Dev Auto Capture",
         };
         write!(f, "{}", name)
     }
@@ -216,6 +218,7 @@ impl SignerApp {
             ("app.stik.store", SignerApp::StikStore),
             ("com.minh-ton.Reynard", SignerApp::Reynard),
             ("nya.asami.ksign", SignerApp::Ksign),
+            ("com.halfeatentoast.devcapture", SignerApp::AutoCapture),
         ];
 
         for &(known_id, app) in KNOWN_APPS {
@@ -261,6 +264,7 @@ impl SignerApp {
             ("stikstore", SignerApp::StikStore),
             ("reynard", SignerApp::Reynard),
             ("ksign", SignerApp::Ksign),
+            ("dev auto capture", SignerApp::AutoCapture),
         ];
 
         for &(needle, app) in KNOWN_APP_NAMES {
@@ -292,6 +296,7 @@ impl SignerApp {
                 Some("/Documents/SideStore/Documents/ALTPairingFile.mobiledevicepairing")
             }
             ByeTunes => Some("/Documents/pairing file/pairingFile.plist"),
+            AutoCapture => Some("/Documents/rpPairingFile.plist"),
             _ => None,
         }
     }
