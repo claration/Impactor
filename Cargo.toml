@@ -14,7 +14,7 @@ default-members = ["apps/plumeimpactor"]
 
 [workspace.package]
 edition = "2024"
-version = "2.5.0"
+version = "2.6.0"
 authors = ["C <claration@riseup.net>"]
 license = "MIT"
 repository = "https://github.com/claration/Impactor"
