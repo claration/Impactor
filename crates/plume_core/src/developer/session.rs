@@ -21,6 +21,7 @@ pub struct DeveloperSession {
     client: Client,
     adsid: String,          // from grandslam's SPD "adsid"
     xcode_gs_token: String, // requested from spd initially // com.apple.gs.xcode.auth
+    pub platform: String,   // "ios" or "tvos"
 }
 
 impl DeveloperSession {
@@ -43,6 +44,7 @@ impl DeveloperSession {
             client: account.client.clone(),
             adsid: adsid.into(),
             xcode_gs_token,
+            platform: "ios".to_string(),
         })
     }
 
@@ -67,6 +69,7 @@ impl DeveloperSession {
             client,
             adsid,
             xcode_gs_token,
+            platform: "ios".to_string(),
         };
 
         // we test the session by listing teams

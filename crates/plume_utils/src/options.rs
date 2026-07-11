@@ -26,6 +26,8 @@ pub struct SignerOptions {
     pub app: SignerApp,
     /// Apply autorefresh
     pub refresh: bool,
+    /// tvOS target
+    pub is_tvos: bool,
 }
 
 impl Default for SignerOptions {
@@ -43,6 +45,7 @@ impl Default for SignerOptions {
             tweaks: None,
             app: SignerApp::Default,
             refresh: false,
+            is_tvos: false,
         }
     }
 }

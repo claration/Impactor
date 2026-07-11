@@ -44,11 +44,12 @@ pub struct Device {
     // On x86_64 macs, `is_mac` variable should never be true
     // since its only true if the device is added manually.
     pub is_mac: bool,
+    pub is_tvos: bool,
 }
 
 impl Device {
     pub async fn new(usbmuxd_device: UsbmuxdDevice) -> Self {
-        let name = Self::get_name_from_usbmuxd_device(&usbmuxd_device)
+        let (name, is_tvos) = Self::get_name_and_platform_from_usbmuxd_device(&usbmuxd_device)
             .await
             .unwrap_or_default();
 
@@ -58,15 +59,21 @@ impl Device {
             device_id: usbmuxd_device.device_id.clone(),
             usbmuxd_device: Some(usbmuxd_device),
             is_mac: false,
+            is_tvos,
         }
     }
 
-    async fn get_name_from_usbmuxd_device(device: &UsbmuxdDevice) -> Result<String, Error> {
+    async fn get_name_and_platform_from_usbmuxd_device(
+        device: &UsbmuxdDevice,
+    ) -> Result<(String, bool), Error> {
         let mut lockdown =
             LockdownClient::connect(&device.to_provider(UsbmuxdAddr::default(), CONNECTION_LABEL))
                 .await?;
         let values = lockdown.get_value(None, None).await?;
-        Ok(get_dict_string!(values, "DeviceName"))
+        let name = get_dict_string!(values, "DeviceName");
+        let product_type = get_dict_string!(values, "ProductType");
+        let is_tvos = product_type.starts_with("AppleTV");
+        Ok((name, is_tvos))
     }
 
     pub async fn installed_apps(&self) -> Result<Vec<SignerAppReal>, Error> {

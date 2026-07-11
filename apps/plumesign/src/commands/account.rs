@@ -275,7 +275,7 @@ async fn devices(args: DevicesArgs) -> Result<()> {
 }
 
 async fn register_device(args: RegisterDeviceArgs) -> Result<()> {
-    let session = get_authenticated_account().await?;
+    let mut session = get_authenticated_account().await?;
 
     let team_id = if args.team_id.is_none() {
         teams(&session).await?
@@ -283,8 +283,15 @@ async fn register_device(args: RegisterDeviceArgs) -> Result<()> {
         args.team_id.unwrap()
     };
 
+    let is_tvos = args.udid.starts_with("AppleTV");
+
+    // Default to tvos if the device UDID matches tvOS pattern
+    if is_tvos {
+        session.platform = "tvos".to_string();
+    }
+
     let p = session
-        .qh_add_device(&team_id, &args.name, &args.udid)
+        .qh_add_device(&team_id, &args.name, &args.udid, is_tvos)
         .await?
         .device;
 

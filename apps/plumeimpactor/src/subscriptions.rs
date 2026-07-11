@@ -33,6 +33,7 @@ pub(crate) fn device_listener() -> Subscription<Message> {
                                     device_id: u32::MAX,
                                     usbmuxd_device: None,
                                     is_mac: true,
+                                    is_tvos: false,
                                 }));
                             }
                         }
@@ -301,7 +302,7 @@ pub(crate) async fn run_installation(
 
             send("Ensuring account is valid...".to_string(), 20);
 
-            let session = DeveloperSession::new(
+            let mut session = DeveloperSession::new(
                 account.adsid().clone(),
                 account.xcode_gs_token().clone(),
                 AnisetteConfiguration::default()
@@ -348,12 +349,18 @@ pub(crate) async fn run_installation(
 
             send("Ensuring device is registered...".to_string(), 30);
 
+            let is_tvos = device.as_ref().is_some_and(|d| d.is_tvos);
             if let Some(dev) = &device {
+                if dev.is_tvos {
+                    session.platform = "tvos".to_string();
+                }
                 session
-                    .qh_ensure_device(team_id, &dev.name, &dev.udid)
+                    .qh_ensure_device(team_id, &dev.name, &dev.udid, dev.is_tvos)
                     .await
                     .map_err(|e| e.to_string())?;
             }
+
+            options.is_tvos = is_tvos;
 
             send("Extracting package...".to_string(), 50);
 
@@ -368,7 +375,7 @@ pub(crate) async fn run_installation(
                 .await
                 .map_err(|e| e.to_string())?;
             signer
-                .register_bundle(&bundle, &session, team_id, false)
+                .register_bundle(&bundle, &session, team_id, false, is_tvos)
                 .await
                 .map_err(|e| e.to_string())?;
             signer

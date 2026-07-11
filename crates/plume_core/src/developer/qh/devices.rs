@@ -24,6 +24,7 @@ impl DeveloperSession {
         team_id: &String,
         device_name: &String,
         device_udid: &String,
+        is_tvos: bool,
     ) -> Result<DeviceResponse, Error> {
         let endpoint = developer_endpoint!("/QH65B2/ios/addDevice.action");
 
@@ -34,6 +35,16 @@ impl DeveloperSession {
             "deviceNumber".to_string(),
             Value::String(device_udid.clone()),
         );
+        if is_tvos {
+            body.insert(
+                "DTDK_Platform".to_string(),
+                Value::String("tvos".to_string()),
+            );
+            body.insert(
+                "subPlatform".to_string(),
+                Value::String("tvOS".to_string()),
+            );
+        }
 
         let response = self.qh_send_request(&endpoint, Some(body)).await?;
         let response_data: DeviceResponse = plist::from_value(&Value::Dictionary(response))?;
@@ -61,12 +72,13 @@ impl DeveloperSession {
         team_id: &String,
         device_name: &String,
         device_udid: &String,
+        is_tvos: bool,
     ) -> Result<Device, Error> {
         if let Some(device) = self.qh_get_device(team_id, device_udid).await? {
             Ok(device)
         } else {
             let response = self
-                .qh_add_device(team_id, device_name, device_udid)
+                .qh_add_device(team_id, device_name, device_udid, is_tvos)
                 .await?;
             Ok(response.device)
         }

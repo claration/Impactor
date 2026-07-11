@@ -171,13 +171,17 @@ impl RefreshDaemon {
             .get_account(&refresh_device.account)
             .ok_or_else(|| format!("Account {} not found", refresh_device.account))?;
 
-        let session = DeveloperSession::new(
+        let mut session = DeveloperSession::new(
             account.adsid().clone(),
             account.xcode_gs_token().clone(),
             AnisetteConfiguration::default().set_configuration_path(get_data_path()),
         )
         .await
         .map_err(|e| format!("Failed to create session: {}", e))?;
+
+        if device.is_tvos {
+            session.platform = "tvos".to_string();
+        }
 
         let teams_response = session
             .qh_list_teams()
@@ -263,7 +267,7 @@ impl RefreshDaemon {
     ) -> Result<(), String> {
         let team_id_string = team_id.to_string();
         session
-            .qh_ensure_device(&team_id_string, &device.name, &device.udid)
+            .qh_ensure_device(&team_id_string, &device.name, &device.udid, device.is_tvos)
             .await
             .map_err(|e| format!("Failed to ensure device: {}", e))?;
 
@@ -272,6 +276,7 @@ impl RefreshDaemon {
 
         let options = SignerOptions {
             mode: SignerMode::Pem,
+            is_tvos: device.is_tvos,
             ..Default::default()
         };
 
@@ -291,7 +296,7 @@ impl RefreshDaemon {
         let mut signer = Signer::new(Some(signing_identity), options);
 
         signer
-            .register_bundle(&bundle, session, &team_id.to_string(), true)
+            .register_bundle(&bundle, session, &team_id.to_string(), true, device.is_tvos)
             .await
             .map_err(|e| format!("Failed to register bundle: {}", e))?;
 
@@ -321,18 +326,25 @@ impl RefreshDaemon {
         session: &DeveloperSession,
         team_id: &str,
     ) -> Result<(), String> {
+        let team_id_string = team_id.to_string();
+        session
+            .qh_ensure_device(&team_id_string, &device.name, &device.udid, device.is_tvos)
+            .await
+            .map_err(|e| format!("Failed to ensure device: {}", e))?;
+
         let bundle =
             Bundle::new(app.path.clone()).map_err(|e| format!("Failed to create bundle: {}", e))?;
 
         let options = SignerOptions {
             mode: SignerMode::Pem,
+            is_tvos: device.is_tvos,
             ..Default::default()
         };
 
         let mut signer = Signer::new(None, options);
 
         signer
-            .register_bundle(&bundle, session, &team_id.to_string(), true)
+            .register_bundle(&bundle, session, &team_id.to_string(), true, device.is_tvos)
             .await
             .map_err(|e| format!("Failed to register bundle: {}", e))?;
 

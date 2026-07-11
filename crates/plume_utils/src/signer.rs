@@ -50,15 +50,16 @@ impl Signer {
         }
 
         if self.options.features.support_minimum_os_version {
-            bundle.set_info_plist_key("MinimumOSVersion", "7.0")?;
+            let min_os = if self.options.is_tvos { "13.0" } else { "7.0" };
+            bundle.set_info_plist_key("MinimumOSVersion", min_os)?;
         }
 
-        if self.options.features.support_file_sharing {
+        if !self.options.is_tvos && self.options.features.support_file_sharing {
             bundle.set_info_plist_key("UIFileSharingEnabled", true)?;
             bundle.set_info_plist_key("UISupportsDocumentBrowser", true)?;
         }
 
-        if self.options.features.support_ipad_fullscreen {
+        if !self.options.is_tvos && self.options.features.support_ipad_fullscreen {
             bundle.set_info_plist_key("UIRequiresFullScreen", true)?;
         }
 
@@ -66,7 +67,7 @@ impl Signer {
             bundle.set_info_plist_key("GCSupportsGameMode", true)?;
         }
 
-        if self.options.features.support_pro_motion {
+        if !self.options.is_tvos && self.options.features.support_pro_motion {
             bundle.set_info_plist_key("CADisableMinimumFrameDurationOnPhone", true)?;
         }
 
@@ -187,12 +188,14 @@ impl Signer {
             });
 
             bundle.set_info_plist_key("CFBundleIcons", cf_bundle_icons)?;
-            bundle.set_info_plist_key("CFBundleIcons~ipad", cf_bundle_icons_ipad)?;
+            if !self.options.is_tvos {
+                bundle.set_info_plist_key("CFBundleIcons~ipad", cf_bundle_icons_ipad)?;
+            }
         }
 
         let has_tweaks = self.options.tweaks.as_ref().is_some_and(|t| !t.is_empty());
 
-        if self.options.features.support_ellekit || has_tweaks {
+        if !self.options.is_tvos && (self.options.features.support_ellekit || has_tweaks) {
             crate::Tweak::install_ellekit(&bundle).await?;
         }
 
@@ -228,6 +231,7 @@ impl Signer {
         session: &DeveloperSession,
         team_id: &String,
         is_refresh: bool,
+        is_tvos: bool,
     ) -> Result<(), Error> {
         if self.options.mode != SignerMode::Pem {
             return Ok(());
@@ -337,7 +341,7 @@ impl Signer {
                 }
 
                 let profiles = session
-                    .qh_get_profile(&team_id, &app_id_id.app_id_id)
+                    .qh_get_profile(&team_id, &app_id_id.app_id_id, is_tvos)
                     .await?;
                 let profile_data = profiles.provisioning_profile.encoded_profile;
 

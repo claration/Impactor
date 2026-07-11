@@ -24,9 +24,10 @@ impl DeveloperSession {
     pub async fn v1_list_capabilities(&self, team: &String) -> Result<CapabilitiesResponse, Error> {
         let endpoint = developer_endpoint!("/v1/capabilities");
 
+        let platform_filter = if self.platform == "tvos" { "TV_OS" } else { "IOS" };
         let body = json!({
             "teamId": team,
-            "urlEncodedQueryParams": "filter[platform]=IOS"
+            "urlEncodedQueryParams": format!("filter[platform]={}", platform_filter)
         });
 
         let response = self

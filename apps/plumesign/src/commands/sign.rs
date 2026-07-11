@@ -54,6 +54,9 @@ pub struct SignArgs {
     #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
     #[arg(short = 'm', long = "mac", value_name = "MAC", conflicts_with = "udid")]
     pub mac: bool,
+    /// Platform to target (ios, tvos). Defaults to ios.
+    #[arg(long = "platform", value_name = "PLATFORM", default_value = "ios")]
+    pub platform: String,
 }
 
 pub async fn execute(args: SignArgs) -> Result<()> {
@@ -91,7 +94,8 @@ pub async fn execute(args: SignArgs) -> Result<()> {
         options.mode = SignerMode::Pem;
         (Signer::new(Some(cert_identity), options), None)
     } else if args.apple_id {
-        let session = get_authenticated_account().await?;
+        let mut session = get_authenticated_account().await?;
+        session.platform = args.platform.clone();
         let team_id = teams(&session).await?;
         let cert_identity = CertificateIdentity::new_with_session(
             &session,
@@ -130,6 +134,7 @@ pub async fn execute(args: SignArgs) -> Result<()> {
                     device_id: 0,
                     usbmuxd_device: None,
                     is_mac: true,
+                    is_tvos: false,
                 })
             } else {
                 Some(select_device(args.udid).await?)
@@ -148,15 +153,18 @@ pub async fn execute(args: SignArgs) -> Result<()> {
             .modify_bundle(&bundle, &Some(team_id.clone()))
             .await?;
 
+        let mut is_tvos = false;
+
         if let Some(ref dev) = device {
             log::info!("Registering device: {} ({})", dev.name, dev.udid);
+            is_tvos = dev.is_tvos;
             session
-                .qh_ensure_device(&team_id, &dev.name, &dev.udid)
+                .qh_ensure_device(&team_id, &dev.name, &dev.udid, dev.is_tvos)
                 .await?;
         }
 
         signer
-            .register_bundle(&bundle, &session, &team_id, false)
+            .register_bundle(&bundle, &session, &team_id, false, is_tvos)
             .await?;
         signer.sign_bundle(&bundle).await?;
 
