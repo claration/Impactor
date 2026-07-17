@@ -57,7 +57,7 @@ pub enum AnisetteError {
 
 pub const DEFAULT_ANISETTE_URL: &str = "https://ani.f1sh.me/";
 
-pub const DEFAULT_ANISETTE_URL_V3: &str = "https://ani.stikstore.app";
+pub const DEFAULT_ANISETTE_URL_V3: &str = "https://ani.sidestore.app";
 
 #[derive(Clone, Debug)]
 pub struct AnisetteConfiguration {
