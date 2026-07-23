@@ -147,7 +147,8 @@ windows:
 ifeq ($(NSIS),1)
 	@cp target/$(PROFILE)/plumeimpactor.exe dist/nsis/
 	@cp -r package/windows/* dist/nsis/
-	@makensis dist/nsis/installer.nsi
+	@VERSION=$$(awk '/\[workspace.package\]/,/^$$/' Cargo.toml | sed -nE 's/version *= *"([^"]*)".*/\1/p'); \
+		makensis -DAPPVERSION=$$VERSION dist/nsis/installer.nsi
 	@mv dist/nsis/installer.exe dist/Impactor-$(SUFFIX)-setup.exe
 endif
 

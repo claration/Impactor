@@ -119,7 +119,8 @@ jobs:
           mkdir dist\nsis
           copy package\windows\* dist\nsis\
           copy dist\Impactor-windows-${{ matrix.arch }}-portable.exe dist\nsis\plumeimpactor.exe
-          makensis dist\nsis\installer.nsi
+          $version = (Select-String -Path Cargo.toml -Pattern '^version = "(.+)"$').Matches.Groups[1].Value
+          makensis /DAPPVERSION=$version dist\nsis\installer.nsi
           move dist\nsis\installer.exe dist\Impactor-windows-${{ matrix.arch }}-setup.exe
 
       - name: Upload Installer

@@ -6,6 +6,10 @@
 !define APPEXE  "plumeimpactor.exe"
 !define COMPANY "Samara"
 
+!ifndef APPVERSION
+    !error "APPVERSION must be defined when building the installer"
+!endif
+
 Name "${APPNAME}"
 BrandingText "${APPNAME} Setup"
 
@@ -60,6 +64,7 @@ Section "Install"
 
     ; 64-bit registry uninstall entry
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "DisplayName" "${APPNAME}"
+    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "DisplayVersion" "${APPVERSION}"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "Publisher" "${COMPANY}"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "InstallLocation" "$INSTDIR"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "UninstallString" "$INSTDIR\Uninstall.exe"
