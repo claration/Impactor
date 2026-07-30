@@ -18,6 +18,10 @@ pub use options::{
     SignerInstallMode, // Installation mode
     SignerMode,        // Signing mode
     SignerOptions,     // Main
+    TweakInjectFolder,
+    TweakInjectPath,
+    TweakInjection,
+    TweakLoader,
 };
 pub use package::Package; // Package helper
 pub use signer::Signer; // Signer

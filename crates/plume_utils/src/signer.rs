@@ -9,7 +9,9 @@ use plume_core::{
     developer::DeveloperSession,
 };
 
-use crate::{Bundle, BundleType, Error, PlistInfoTrait, SignerApp, SignerMode, SignerOptions};
+use crate::{
+    Bundle, BundleType, Error, PlistInfoTrait, SignerApp, SignerMode, SignerOptions, TweakLoader,
+};
 
 pub struct Signer {
     certificate: Option<CertificateIdentity>,
@@ -192,13 +194,21 @@ impl Signer {
 
         let has_tweaks = self.options.tweaks.as_ref().is_some_and(|t| !t.is_empty());
 
-        if self.options.features.support_ellekit || has_tweaks {
+        if self.options.tweak_loader == TweakLoader::ElleKit
+            && (self.options.features.support_ellekit || has_tweaks)
+        {
             crate::Tweak::install_ellekit(&bundle).await?;
         }
 
         if let Some(tweak_files) = self.options.tweaks.as_ref() {
             for tweak_file in tweak_files {
-                let tweak = crate::Tweak::new(tweak_file, bundle).await?;
+                let tweak = crate::Tweak::new_with_options(
+                    tweak_file,
+                    bundle,
+                    self.options.tweak_loader,
+                    self.options.tweak_injection,
+                )
+                .await?;
                 tweak.apply().await?;
             }
         }

@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, str::FromStr};
 
 /// Settings for the signer process.
 #[derive(Clone, Debug)]
@@ -22,6 +22,10 @@ pub struct SignerOptions {
     pub install_mode: SignerInstallMode,
     /// Tweaks to apply before signing.
     pub tweaks: Option<Vec<PathBuf>>,
+    /// Loader/runtime to bundle when applying tweaks.
+    pub tweak_loader: TweakLoader,
+    /// User tweak load-path behavior.
+    pub tweak_injection: TweakInjection,
     /// App type.
     pub app: SignerApp,
     /// Apply autorefresh
@@ -41,6 +45,8 @@ impl Default for SignerOptions {
             mode: SignerMode::default(),
             install_mode: SignerInstallMode::default(),
             tweaks: None,
+            tweak_loader: TweakLoader::default(),
+            tweak_injection: TweakInjection::default(),
             app: SignerApp::Default,
             refresh: false,
         }
@@ -81,6 +87,197 @@ pub struct SignerFeatures {
 #[derive(Clone, Debug, Default)]
 pub struct SignerEmbedding {
     pub single_profile: bool,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TweakLoader {
+    /// Bundle and inject the bundled ElleKit/CydiaSubstrate compatibility framework.
+    ElleKit,
+    /// Do not bundle a tweak loader. User tweak dylibs/frameworks are still copied and injected.
+    None,
+}
+
+impl Default for TweakLoader {
+    fn default() -> Self {
+        TweakLoader::ElleKit
+    }
+}
+
+impl std::fmt::Display for TweakLoader {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TweakLoader::ElleKit => write!(f, "ellekit"),
+            TweakLoader::None => write!(f, "none"),
+        }
+    }
+}
+
+impl FromStr for TweakLoader {
+    type Err = String;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        match value.trim().to_ascii_lowercase().as_str() {
+            "ellekit" => Ok(TweakLoader::ElleKit),
+            "none" | "nothing" | "direct" => Ok(TweakLoader::None),
+            other => Err(format!(
+                "unsupported tweak loader '{other}', expected one of: ellekit, none"
+            )),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TweakInjectPath {
+    ExecutablePath,
+    RPath,
+}
+
+impl Default for TweakInjectPath {
+    fn default() -> Self {
+        TweakInjectPath::RPath
+    }
+}
+
+impl TweakInjectPath {
+    pub fn token(self) -> &'static str {
+        match self {
+            TweakInjectPath::ExecutablePath => "@executable_path",
+            TweakInjectPath::RPath => "@rpath",
+        }
+    }
+}
+
+impl std::fmt::Display for TweakInjectPath {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.token())
+    }
+}
+
+impl FromStr for TweakInjectPath {
+    type Err = String;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        match value.trim().to_ascii_lowercase().as_str() {
+            "@rpath" | "rpath" => Ok(TweakInjectPath::RPath),
+            "@executable_path" | "executable" | "executable_path" | "executable-path" | "exec" => {
+                Ok(TweakInjectPath::ExecutablePath)
+            }
+            other => Err(format!(
+                "unsupported tweak inject path '{other}', expected @rpath or @executable_path"
+            )),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TweakInjectFolder {
+    Root,
+    Frameworks,
+}
+
+impl Default for TweakInjectFolder {
+    fn default() -> Self {
+        TweakInjectFolder::Root
+    }
+}
+
+impl TweakInjectFolder {
+    pub fn load_path_component(self) -> &'static str {
+        match self {
+            TweakInjectFolder::Root => "",
+            TweakInjectFolder::Frameworks => "Frameworks/",
+        }
+    }
+}
+
+impl std::fmt::Display for TweakInjectFolder {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TweakInjectFolder::Root => write!(f, "/"),
+            TweakInjectFolder::Frameworks => write!(f, "Frameworks/"),
+        }
+    }
+}
+
+impl FromStr for TweakInjectFolder {
+    type Err = String;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        match value.trim().to_ascii_lowercase().as_str() {
+            "" | "/" | "." | "root" => Ok(TweakInjectFolder::Root),
+            "framework" | "frameworks" | "frameworks/" | "/frameworks" | "/frameworks/" => {
+                Ok(TweakInjectFolder::Frameworks)
+            }
+            other => Err(format!(
+                "unsupported tweak inject folder '{other}', expected / or Frameworks/"
+            )),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TweakInjection {
+    /// Existing behavior: copy dylibs/frameworks into Frameworks and inject @rpath/<leaf>.
+    Legacy,
+    /// Explicit UI-compatible path/folder mode.
+    Custom {
+        path: TweakInjectPath,
+        folder: TweakInjectFolder,
+    },
+}
+
+impl Default for TweakInjection {
+    fn default() -> Self {
+        TweakInjection::Legacy
+    }
+}
+
+impl TweakInjection {
+    pub fn custom(path: TweakInjectPath, folder: TweakInjectFolder) -> Self {
+        TweakInjection::Custom { path, folder }
+    }
+
+    pub fn destination_dir(self, app_bundle: &std::path::Path) -> PathBuf {
+        match self {
+            TweakInjection::Legacy => app_bundle.join("Frameworks"),
+            TweakInjection::Custom { folder, .. } => match folder {
+                TweakInjectFolder::Root => app_bundle.to_path_buf(),
+                TweakInjectFolder::Frameworks => app_bundle.join("Frameworks"),
+            },
+        }
+    }
+
+    pub fn dylib_load_path(self, file_name: &str) -> String {
+        match self {
+            TweakInjection::Legacy => format!("@rpath/{file_name}"),
+            TweakInjection::Custom { path, folder } => format!(
+                "{}/{folder}{file_name}",
+                path.token(),
+                folder = folder.load_path_component()
+            ),
+        }
+    }
+
+    pub fn framework_load_path(self, framework_name: &str, executable_name: &str) -> String {
+        match self {
+            TweakInjection::Legacy => format!("@rpath/{framework_name}/{executable_name}"),
+            TweakInjection::Custom { path, folder } => format!(
+                "{}/{folder}{framework_name}/{executable_name}",
+                path.token(),
+                folder = folder.load_path_component()
+            ),
+        }
+    }
+
+    pub fn required_rpath(self) -> Option<&'static str> {
+        match self {
+            TweakInjection::Custom {
+                path: TweakInjectPath::RPath,
+                ..
+            } => Some("@executable_path"),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

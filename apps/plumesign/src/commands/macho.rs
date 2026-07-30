@@ -16,6 +16,12 @@ pub struct MachArgs {
     /// Add a dylib dependency (e.g., @rpath/MyLib.dylib)
     #[arg(long, value_name = "DYLIB_PATH")]
     pub add_dylib: Option<String>,
+    /// List all LC_RPATH search paths
+    #[arg(long)]
+    pub list_rpaths: bool,
+    /// Add an LC_RPATH search path
+    #[arg(long, value_name = "RPATH")]
+    pub add_rpath: Option<String>,
     /// Replace an existing dylib dependency
     #[arg(long, value_names = &["OLD", "NEW"], num_args = 2)]
     pub replace_dylib: Option<Vec<String>>,
@@ -29,6 +35,11 @@ pub async fn execute(args: MachArgs) -> Result<()> {
 
     if let Some(dylib_path) = &args.add_dylib {
         macho.add_dylib(dylib_path)?;
+        return Ok(());
+    }
+
+    if let Some(rpath) = &args.add_rpath {
+        macho.add_rpath(rpath)?;
         return Ok(());
     }
 
@@ -48,6 +59,13 @@ pub async fn execute(args: MachArgs) -> Result<()> {
             .dylib_load_paths()
             .unwrap();
         for path in d {
+            println!("{path}");
+        }
+        return Ok(());
+    }
+
+    if args.list_rpaths {
+        for path in macho.rpaths()? {
             println!("{path}");
         }
         return Ok(());

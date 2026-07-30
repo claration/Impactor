@@ -7,7 +7,7 @@ use goblin::mach::{
     cputype::CPU_TYPE_ARM64,
     load_command::{
         CommandVariant, LC_LAZY_LOAD_DYLIB, LC_LOAD_DYLIB, LC_LOAD_UPWARD_DYLIB,
-        LC_LOAD_WEAK_DYLIB, LC_REEXPORT_DYLIB,
+        LC_LOAD_WEAK_DYLIB, LC_REEXPORT_DYLIB, LC_RPATH,
     },
 };
 use plist::{Dictionary, Value};
@@ -82,6 +82,23 @@ impl MachO {
         Ok(())
     }
 
+    pub fn rpaths(&self) -> Result<Vec<String>, Error> {
+        let mut out = Vec::new();
+        for macho in self.macho_file.iter_macho() {
+            out.extend(macho.rpath_load_paths()?);
+        }
+        Ok(out)
+    }
+
+    pub fn add_rpath(&mut self, path: &str) -> Result<(), Error> {
+        let machos = self.macho_file.iter_macho_mut();
+        for macho in machos {
+            macho.add_rpath_load_path(path)?;
+        }
+        self.write_changes()?;
+        Ok(())
+    }
+
     pub fn replace_dylib(&mut self, old_path: &str, new_path: &str) -> Result<(), Error> {
         let machos = self.macho_file.iter_macho_mut();
         for macho in machos {
@@ -114,7 +131,9 @@ impl MachO {
 pub trait MachOExt {
     fn embedded_entitlements(&self) -> Result<Option<Dictionary>, Error>;
     fn dylib_load_paths(&self) -> Result<Vec<String>, Error>;
+    fn rpath_load_paths(&self) -> Result<Vec<String>, Error>;
     fn add_dylib_load_path(&mut self, path: &str) -> Result<(), Error>;
+    fn add_rpath_load_path(&mut self, path: &str) -> Result<(), Error>;
     fn remove_dylib_load_path(&mut self, path: &str) -> Result<(), Error>;
     fn replace_dylib_load_path(&mut self, old_path: &str, new_path: &str) -> Result<(), Error>;
     fn replace_sdk_version(&mut self, new_version: &str) -> Result<(), Error>;
@@ -156,6 +175,20 @@ impl<'a> MachOExt for MachOBinary<'a> {
                 };
                 if let Some(p) = path {
                     paths.push(p);
+                }
+            }
+        }
+
+        Ok(paths)
+    }
+
+    fn rpath_load_paths(&self) -> Result<Vec<String>, Error> {
+        let mut paths = Vec::new();
+
+        for load_cmd in &self.macho.load_commands {
+            if load_cmd.command.cmd() == LC_RPATH {
+                if let Some(path) = manually_parse_lc_str(self.data, load_cmd.offset, 8) {
+                    paths.push(path);
                 }
             }
         }
@@ -278,6 +311,91 @@ impl<'a> MachOExt for MachOBinary<'a> {
         data[sizeofcmds_offset..sizeofcmds_offset + 4]
             .copy_from_slice(&new_sizeofcmds.to_le_bytes());
         data[ncmds_offset..ncmds_offset + 4].copy_from_slice(&new_ncmds.to_le_bytes());
+
+        self.data = Box::leak(data.into_boxed_slice());
+
+        Ok(())
+    }
+
+    fn add_rpath_load_path(&mut self, path: &str) -> Result<(), Error> {
+        let macho = &self.macho;
+
+        let read_u32_le = |data: &[u8], offset: usize| -> u32 {
+            u32::from_le_bytes([
+                data[offset],
+                data[offset + 1],
+                data[offset + 2],
+                data[offset + 3],
+            ])
+        };
+
+        let rpath_exists = macho.load_commands.iter().any(|load_cmd| {
+            load_cmd.command.cmd() == LC_RPATH
+                && manually_parse_lc_str(self.data, load_cmd.offset, 8)
+                    .map_or(false, |existing| existing == path)
+        });
+
+        if rpath_exists {
+            log::warn!("RPath already exists in binary: {}", path);
+            return Ok(());
+        }
+
+        let is_64 = matches!(macho.header.cputype, CPU_TYPE_ARM64);
+        let current_sizeofcmds = read_u32_le(&self.data, 20);
+        let current_ncmds = read_u32_le(&self.data, 16);
+
+        let mut data = self.data.to_vec();
+
+        let header_size = if is_64 { 32 } else { 28 };
+        let rpath_len = path.len();
+        let padding = (8 - ((rpath_len + 1) % 8)) % 8;
+        let command_size = 12 + rpath_len + 1 + padding;
+
+        let load_commands_offset = header_size;
+        let load_commands_end = load_commands_offset + current_sizeofcmds as usize;
+
+        let min_fileoff = macho
+            .load_commands
+            .iter()
+            .filter_map(|load_cmd| match &load_cmd.command {
+                CommandVariant::Segment64(seg) if seg.filesize > 0 && seg.fileoff > 0 => {
+                    Some(seg.fileoff)
+                }
+                CommandVariant::Segment32(seg) if seg.filesize > 0 && seg.fileoff > 0 => {
+                    Some(seg.fileoff as u64)
+                }
+                _ => None,
+            })
+            .min()
+            .unwrap_or(u64::MAX);
+
+        let data_start = if min_fileoff < u64::MAX {
+            min_fileoff as usize
+        } else {
+            data.len()
+        };
+
+        let available_space = data_start.saturating_sub(load_commands_end);
+        if command_size > available_space {
+            return Err(Error::Parse);
+        }
+
+        let insert_offset = load_commands_end;
+        let mut new_command = Vec::new();
+        new_command.extend_from_slice(&(LC_RPATH as u32).to_le_bytes());
+        new_command.extend_from_slice(&(command_size as u32).to_le_bytes());
+        new_command.extend_from_slice(&12u32.to_le_bytes());
+        new_command.extend_from_slice(path.as_bytes());
+        new_command.push(0);
+        new_command.extend(vec![0u8; padding]);
+
+        data[insert_offset..insert_offset + command_size].copy_from_slice(&new_command);
+
+        let new_sizeofcmds = current_sizeofcmds + command_size as u32;
+        let new_ncmds = current_ncmds + 1;
+
+        data[20..24].copy_from_slice(&new_sizeofcmds.to_le_bytes());
+        data[16..20].copy_from_slice(&new_ncmds.to_le_bytes());
 
         self.data = Box::leak(data.into_boxed_slice());
 
@@ -490,18 +608,26 @@ fn extract_dylib_path(
         .map(|s| s.to_string())
 }
 
-// TODO: our custom ones need manual parsing?
-fn manually_parse_dylib(file_data: &[u8], load_cmd_offset: usize) -> Option<String> {
-    if load_cmd_offset + 12 > file_data.len() {
+fn manually_parse_lc_str(
+    file_data: &[u8],
+    load_cmd_offset: usize,
+    offset_field: usize,
+) -> Option<String> {
+    if load_cmd_offset + offset_field + 4 > file_data.len() {
         return None;
     }
 
     let name_offset_field = u32::from_le_bytes([
-        file_data[load_cmd_offset + 8],
-        file_data[load_cmd_offset + 9],
-        file_data[load_cmd_offset + 10],
-        file_data[load_cmd_offset + 11],
+        file_data[load_cmd_offset + offset_field],
+        file_data[load_cmd_offset + offset_field + 1],
+        file_data[load_cmd_offset + offset_field + 2],
+        file_data[load_cmd_offset + offset_field + 3],
     ]);
 
     extract_dylib_path(file_data, load_cmd_offset, name_offset_field)
+}
+
+// TODO: our custom ones need manual parsing?
+fn manually_parse_dylib(file_data: &[u8], load_cmd_offset: usize) -> Option<String> {
+    manually_parse_lc_str(file_data, load_cmd_offset, 8)
 }

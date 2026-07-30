@@ -6,7 +6,7 @@ use std::{
 use plume_core::MachO;
 use uuid::Uuid;
 
-use crate::{Bundle, Error, PlistInfoTrait, copy_dir_recursively};
+use crate::{Bundle, Error, PlistInfoTrait, TweakInjection, TweakLoader, copy_dir_recursively};
 
 const ELLEKIT_BYTES: &[u8] = include_bytes!("./ellekit.deb");
 
@@ -14,6 +14,8 @@ pub struct Tweak {
     path: PathBuf,
     app_bundle: PathBuf,
     stage_dir: PathBuf,
+    loader: TweakLoader,
+    injection: TweakInjection,
 }
 
 impl Tweak {
@@ -24,7 +26,13 @@ impl Tweak {
         let deb_path = stage_dir.join("ellekit.deb");
         tokio::fs::write(&deb_path, ELLEKIT_BYTES).await?;
 
-        let tweak = Tweak::new(&deb_path, app_bundle).await?;
+        let tweak = Tweak::new_with_options(
+            &deb_path,
+            app_bundle,
+            TweakLoader::ElleKit,
+            TweakInjection::Legacy,
+        )
+        .await?;
         tweak.install_deb().await?;
 
         tokio::fs::remove_dir_all(&stage_dir).await.ok();
@@ -33,6 +41,29 @@ impl Tweak {
     }
 
     pub async fn new<P: AsRef<Path>>(tweak_path: P, app_bundle: &Bundle) -> Result<Self, Error> {
+        Self::new_with_options(
+            tweak_path,
+            app_bundle,
+            TweakLoader::ElleKit,
+            TweakInjection::Legacy,
+        )
+        .await
+    }
+
+    pub async fn new_with_loader<P: AsRef<Path>>(
+        tweak_path: P,
+        app_bundle: &Bundle,
+        loader: TweakLoader,
+    ) -> Result<Self, Error> {
+        Self::new_with_options(tweak_path, app_bundle, loader, TweakInjection::Legacy).await
+    }
+
+    pub async fn new_with_options<P: AsRef<Path>>(
+        tweak_path: P,
+        app_bundle: &Bundle,
+        loader: TweakLoader,
+        injection: TweakInjection,
+    ) -> Result<Self, Error> {
         let path = tweak_path.as_ref();
         if !path.exists() {
             return Err(Error::TweakInvalidPath);
@@ -59,6 +90,8 @@ impl Tweak {
             path: path.to_path_buf(),
             app_bundle: app_bundle.bundle_dir().clone(),
             stage_dir,
+            loader,
+            injection,
         })
     }
 
@@ -217,33 +250,45 @@ impl Tweak {
     }
 
     async fn install_dylib(&self, dylib_path: &Path) -> Result<(), Error> {
-        let frameworks_dir = self.app_bundle.join("Frameworks");
-        tokio::fs::create_dir_all(&frameworks_dir).await?;
+        let install_dir = self.injection.destination_dir(&self.app_bundle);
+        tokio::fs::create_dir_all(&install_dir).await?;
 
         let dylib_name = dylib_path.file_name().ok_or(Error::TweakInvalidPath)?;
-        let dest = frameworks_dir.join(dylib_name);
+        let dylib_name_str = dylib_name.to_str().ok_or(Error::TweakInvalidPath)?;
+        let dest = install_dir.join(dylib_name);
 
         tokio::fs::copy(dylib_path, &dest).await?;
 
-        Self::patch_cydiasubstrate(&dest);
-        self.inject_dylib(&dest, false).await
+        if self.loader == TweakLoader::ElleKit {
+            Self::patch_cydiasubstrate(&dest);
+        }
+
+        let load_path = self.injection.dylib_load_path(dylib_name_str);
+        self.inject_load_path(&load_path).await
     }
 
     async fn install_framework(&self, framework_path: &Path) -> Result<(), Error> {
-        let frameworks_dir = self.app_bundle.join("Frameworks");
-        tokio::fs::create_dir_all(&frameworks_dir).await?;
+        let install_dir = self.injection.destination_dir(&self.app_bundle);
+        tokio::fs::create_dir_all(&install_dir).await?;
 
         let framework_name = framework_path.file_name().ok_or(Error::TweakInvalidPath)?;
-        let dest = frameworks_dir.join(framework_name);
+        let framework_name_str = framework_name.to_str().ok_or(Error::TweakInvalidPath)?;
+        let dest = install_dir.join(framework_name);
 
         copy_dir_recursively(&framework_path, &dest).await?;
 
         if let Ok(bundle) = Bundle::new(&dest) {
             if let Some(exec_name) = bundle.get_executable() {
-                let exec_path = dest.join(exec_name);
+                let exec_path = dest.join(&exec_name);
                 if exec_path.exists() {
-                    Self::patch_cydiasubstrate(&exec_path);
-                    self.inject_dylib(&exec_path, true).await?;
+                    if self.loader == TweakLoader::ElleKit {
+                        Self::patch_cydiasubstrate(&exec_path);
+                    }
+
+                    let load_path = self
+                        .injection
+                        .framework_load_path(framework_name_str, &exec_name);
+                    self.inject_load_path(&load_path).await?;
                 }
             }
         }
@@ -268,7 +313,7 @@ impl Tweak {
         copy_dir_recursively(appex_path, &dest).await
     }
 
-    async fn inject_dylib(&self, dylib_path: &Path, is_framework: bool) -> Result<(), Error> {
+    async fn inject_load_path(&self, load_path: &str) -> Result<(), Error> {
         let bundle = Bundle::new(&self.app_bundle)?;
         let executable_name = bundle
             .get_executable()
@@ -279,30 +324,14 @@ impl Tweak {
             return Err(Error::BundleInfoPlistMissing);
         }
 
-        let inject_path = if is_framework {
-            let components: Vec<_> = dylib_path.components().rev().take(2).collect();
-            format!(
-                "@rpath/{}/{}",
-                components[1]
-                    .as_os_str()
-                    .to_str()
-                    .ok_or(Error::TweakInvalidPath)?,
-                components[0]
-                    .as_os_str()
-                    .to_str()
-                    .ok_or(Error::TweakInvalidPath)?
-            )
-        } else {
-            let file_name = dylib_path
-                .file_name()
-                .and_then(|f| f.to_str())
-                .ok_or(Error::TweakInvalidPath)?;
-            format!("@rpath/{}", file_name)
-        };
+        if let Some(rpath) = self.injection.required_rpath() {
+            let mut macho = MachO::new(&executable_path)?;
+            macho.add_rpath(rpath)?;
+        }
 
+        // Re-parse after adding LC_RPATH so LC_LOAD_DYLIB insertion sees the updated header.
         let mut macho = MachO::new(&executable_path)?;
-        macho.add_dylib(&inject_path)?;
-        macho.write_changes()?;
+        macho.add_dylib(load_path)?;
 
         Ok(())
     }

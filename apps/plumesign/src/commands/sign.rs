@@ -4,7 +4,10 @@ use anyhow::Result;
 use clap::Args;
 
 use plume_core::{CertificateIdentity, MobileProvision};
-use plume_utils::{Bundle, Package, Signer, SignerMode, SignerOptions};
+use plume_utils::{
+    Bundle, Package, Signer, SignerMode, SignerOptions, TweakInjectFolder, TweakInjectPath,
+    TweakInjection, TweakLoader,
+};
 
 use crate::{
     commands::{
@@ -38,9 +41,22 @@ pub struct SignArgs {
     /// Custom bundle version to set
     #[arg(long = "custom-version", value_name = "VERSION")]
     pub version: Option<String>,
-    /// Perform ad-hoc signing (no certificate required)
+    /// Tweak files to apply before signing (.deb, .dylib, .framework, .bundle, .appex)
     #[arg(long, short, num_args = 1..)]
     pub tweaks: Option<Vec<PathBuf>>,
+    /// Loader/runtime to bundle when applying tweaks
+    #[arg(long = "tweak-loader", value_name = "LOADER", default_value_t = TweakLoader::ElleKit)]
+    pub tweak_loader: TweakLoader,
+    /// Load-path prefix for user tweak dylibs/frameworks; supplying this opts into custom injection-path mode
+    #[arg(long = "tweak-inject-path", alias = "inject-path", value_name = "PATH")]
+    pub tweak_inject_path: Option<TweakInjectPath>,
+    /// Load-path folder for user tweak dylibs/frameworks; supplying this opts into custom injection-path mode
+    #[arg(
+        long = "tweak-inject-folder",
+        alias = "inject-folder",
+        value_name = "FOLDER"
+    )]
+    pub tweak_inject_folder: Option<TweakInjectFolder>,
     /// Register device and install after signing
     #[arg(long)]
     pub register_and_install: bool,
@@ -63,11 +79,20 @@ pub async fn execute(args: SignArgs) -> Result<()> {
         ));
     }
 
+    let tweak_injection = match (args.tweak_inject_path, args.tweak_inject_folder) {
+        (None, None) => TweakInjection::Legacy,
+        (path, folder) => {
+            TweakInjection::custom(path.unwrap_or_default(), folder.unwrap_or_default())
+        }
+    };
+
     let mut options = SignerOptions {
         custom_identifier: args.bundle_identifier,
         custom_name: args.name,
         custom_version: args.version,
         tweaks: args.tweaks,
+        tweak_loader: args.tweak_loader,
+        tweak_injection,
         ..Default::default()
     };
 
