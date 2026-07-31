@@ -5,7 +5,8 @@ use std::time::Duration;
 
 use chrono::Utc;
 use plume_core::{
-    AnisetteConfiguration, CertificateIdentity, MobileProvision, developer::DeveloperSession,
+    AnisetteConfiguration, CertificateIdentity, MobileProvision,
+    developer::{DeveloperPlatform, DeveloperSession},
 };
 use plume_store::{AccountStore, RefreshDevice};
 use plume_utils::{Bundle, Device, Signer, SignerMode, SignerOptions};
@@ -261,9 +262,19 @@ impl RefreshDaemon {
         session: &DeveloperSession,
         team_id: &str,
     ) -> Result<(), String> {
+        if device.udid.is_empty() {
+            return Err("Device UDID is unknown; cannot register it with Apple".to_string());
+        }
+
+        let platform = if device.is_tvos() {
+            DeveloperPlatform::TvOs
+        } else {
+            DeveloperPlatform::IOs
+        };
+
         let team_id_string = team_id.to_string();
         session
-            .qh_ensure_device(&team_id_string, &device.name, &device.udid)
+            .qh_ensure_device(&team_id_string, &device.name, &device.udid, platform)
             .await
             .map_err(|e| format!("Failed to ensure device: {}", e))?;
 
@@ -291,7 +302,7 @@ impl RefreshDaemon {
         let mut signer = Signer::new(Some(signing_identity), options);
 
         signer
-            .register_bundle(&bundle, session, &team_id.to_string(), true)
+            .register_bundle(&bundle, session, &team_id.to_string(), true, platform)
             .await
             .map_err(|e| format!("Failed to register bundle: {}", e))?;
 
@@ -331,8 +342,14 @@ impl RefreshDaemon {
 
         let mut signer = Signer::new(None, options);
 
+        let platform = if device.is_tvos() {
+            DeveloperPlatform::TvOs
+        } else {
+            DeveloperPlatform::IOs
+        };
+
         signer
-            .register_bundle(&bundle, session, &team_id.to_string(), true)
+            .register_bundle(&bundle, session, &team_id.to_string(), true, platform)
             .await
             .map_err(|e| format!("Failed to register bundle: {}", e))?;
 
