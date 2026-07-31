@@ -10,6 +10,7 @@ use idevice::{
 };
 use plume_utils::{Device, Package, get_device_for_id};
 
+
 #[derive(Debug, Args)]
 #[command(arg_required_else_help = true)]
 pub struct DeviceArgs {
@@ -56,6 +57,10 @@ pub async fn execute(args: DeviceArgs) -> Result<()> {
                     device_id: 0,
                     usbmuxd_device: None,
                     is_mac: true,
+                    pairing_address: None,
+                    reconnect_address: None,
+                    pairing_identity: None,
+                    pairing_cache_dir: None,
                 }
             } else {
                 select_device(args.udid).await?
@@ -87,7 +92,7 @@ pub async fn execute(args: DeviceArgs) -> Result<()> {
         log::info!("Installing app at {:?} to device {}", app_path, device.name);
         device
             .install_app(&app_path, |progress| async move {
-                log::info!("{}", progress);
+                log::info!("Installation progress: {}%", progress);
             })
             .await?;
     }

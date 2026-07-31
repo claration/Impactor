@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use anyhow::Result;
 use clap::Args;
 
-use plume_core::{CertificateIdentity, MobileProvision};
+use plume_core::{CertificateIdentity, MobileProvision, developer::DeveloperPlatform};
 use plume_utils::{Bundle, Package, Signer, SignerMode, SignerOptions};
 
 use crate::{
@@ -130,6 +130,10 @@ pub async fn execute(args: SignArgs) -> Result<()> {
                     device_id: 0,
                     usbmuxd_device: None,
                     is_mac: true,
+                    pairing_address: None,
+                    reconnect_address: None,
+                    pairing_identity: None,
+                    pairing_cache_dir: None,
                 })
             } else {
                 Some(select_device(args.udid).await?)
@@ -151,12 +155,12 @@ pub async fn execute(args: SignArgs) -> Result<()> {
         if let Some(ref dev) = device {
             log::info!("Registering device: {} ({})", dev.name, dev.udid);
             session
-                .qh_ensure_device(&team_id, &dev.name, &dev.udid)
+                .qh_ensure_device(&team_id, &dev.name, &dev.udid, DeveloperPlatform::IOs)
                 .await?;
         }
 
         signer
-            .register_bundle(&bundle, &session, &team_id, false)
+            .register_bundle(&bundle, &session, &team_id, false, DeveloperPlatform::IOs)
             .await?;
         signer.sign_bundle(&bundle).await?;
 

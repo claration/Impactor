@@ -20,6 +20,7 @@ pub enum Message {
     FileSelected(Option<std::path::PathBuf>),
     NavigateToInstaller(plume_utils::Package),
     NavigateToUtilities,
+    NavigateTvOsPairing,
     OpenGitHub,
     OpenDonate,
 }
@@ -121,23 +122,34 @@ impl GeneralScreen {
 
     fn view_buttons(&self) -> Element<'_, Message> {
         container(
-            row![
+            column![
+                row![
+                    button(appearance::icon_text(
+                        appearance::WRENCH,
+                        t!("utilities"),
+                        None
+                    ))
+                    .on_press(Message::NavigateToUtilities)
+                    .width(Fill)
+                    .style(appearance::s_button),
+                    button(appearance::icon_text(
+                        appearance::DOWNLOAD,
+                        t!("import_ipa"),
+                        None
+                    ))
+                    .on_press(Message::OpenFileDialog)
+                    .width(Fill)
+                    .style(appearance::s_button)
+                ]
+                .spacing(appearance::THEME_PADDING),
                 button(appearance::icon_text(
-                    appearance::WRENCH,
-                    t!("utilities"),
+                    appearance::PLUS,
+                    t!("pair_apple_tv"),
                     None
                 ))
-                .on_press(Message::NavigateToUtilities)
+                .on_press(Message::NavigateTvOsPairing)
                 .width(Fill)
                 .style(appearance::s_button),
-                button(appearance::icon_text(
-                    appearance::DOWNLOAD,
-                    t!("import_ipa"),
-                    None
-                ))
-                .on_press(Message::OpenFileDialog)
-                .width(Fill)
-                .style(appearance::s_button)
             ]
             .spacing(appearance::THEME_PADDING),
         )
