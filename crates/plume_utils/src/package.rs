@@ -201,11 +201,16 @@ impl Package {
             for entry in fs::read_dir(path)? {
                 let entry = entry?;
                 let entry_path = entry.path();
+                // Zip entry names are separated by '/' on every platform, and readers split on
+                // it to find a bundle: `to_string_lossy` on a relative path would hand them
+                // Windows separators and leave the archive unreadable.
                 let name = entry_path
                     .strip_prefix(prefix)
                     .map_err(|_| Error::PackageInfoPlistMissing)?
-                    .to_string_lossy()
-                    .to_string();
+                    .components()
+                    .map(|component| component.as_os_str().to_string_lossy())
+                    .collect::<Vec<_>>()
+                    .join("/");
 
                 if entry_path.is_file() {
                     zip.start_file(&name, options.clone())?;
@@ -286,5 +291,69 @@ impl Package {
 
         let new_settings = SignerOptions::new_for_app(app);
         *settings = new_settings;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A stage directory laid out the way `get_package_bundle` leaves one.
+    fn staged_package(tag: &str) -> Package {
+        let stage_dir = env::temp_dir().join(format!("plume_pkg_test_{tag}_{}", Uuid::new_v4()));
+        let app_dir = stage_dir.join("Payload").join("Test.app");
+        fs::create_dir_all(app_dir.join("Frameworks")).unwrap();
+        fs::write(app_dir.join("Info.plist"), b"plist").unwrap();
+        fs::write(app_dir.join("Frameworks").join("lib.dylib"), b"macho").unwrap();
+
+        Package {
+            package_file: stage_dir.join("stage.ipa"),
+            stage_payload_dir: stage_dir.join("Payload"),
+            stage_dir,
+            info_plist_dictionary: Dictionary::new(),
+            archive_entries: Vec::new(),
+            app_icon_data: None,
+        }
+    }
+
+    fn entry_names(archive: &PathBuf) -> Vec<String> {
+        let mut zip = ZipArchive::new(fs::File::open(archive).unwrap()).unwrap();
+        (0..zip.len())
+            .map(|i| zip.by_index(i).unwrap().name().to_string())
+            .collect()
+    }
+
+    /// InstallationProxy locates the bundle by splitting entry names on '/' and counting
+    /// segments, so a separator that is not '/' makes the archive unreadable to it even though
+    /// the zip itself is well formed.
+    #[test]
+    fn archive_entries_are_separated_by_forward_slashes() {
+        let package = staged_package("separators");
+        let stage_dir = package.stage_dir.clone();
+
+        let archive = package.archive_package_bundle().unwrap();
+        let names = entry_names(&archive);
+
+        for name in &names {
+            assert!(
+                !name.contains('\\'),
+                "entry {name:?} uses a backslash separator"
+            );
+        }
+        // A bundle id is read from the Info.plist exactly three segments deep.
+        assert!(
+            names.iter().any(|n| n == "Payload/Test.app/Info.plist"),
+            "no Info.plist at the depth a bundle id is read from, got {names:?}"
+        );
+
+        // The package type is read from the second entry, taking the segment after "Payload".
+        let second = names.get(1).expect("archive has more than one entry");
+        assert_eq!(
+            second.split('/').nth(1),
+            Some("Test.app"),
+            "second entry {second:?} does not name the app bundle"
+        );
+
+        fs::remove_dir_all(&stage_dir).ok();
     }
 }
