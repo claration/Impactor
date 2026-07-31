@@ -1,6 +1,7 @@
 mod bundle;
 mod cgbi;
 mod device;
+pub mod discovery;
 mod options;
 mod package;
 mod signer;
@@ -9,7 +10,7 @@ mod tweak;
 use std::path::Path;
 
 pub use bundle::{Bundle, BundleType}; // Bundle helper
-pub use device::{Device, get_device_for_id, install_app_mac}; // Device helper
+pub use device::{Device, TvosDeviceInfo, get_device_for_id, install_app_mac, synthetic_device_id}; // Device helper
 pub use options::{
     SignerApp, // Supported app types
     SignerAppReal,
@@ -22,6 +23,8 @@ pub use options::{
 pub use package::Package; // Package helper
 pub use signer::Signer; // Signer
 pub use tweak::Tweak; // Tweak helper
+
+pub type Result<T> = std::result::Result<T, Error>;
 
 use thiserror::Error as ThisError;
 #[derive(Debug, ThisError)]
@@ -68,7 +71,7 @@ pub trait PlistInfoTrait {
     fn get_build_version(&self) -> Option<String>;
 }
 
-pub async fn copy_dir_recursively(src: &Path, dst: &Path) -> Result<(), Error> {
+pub async fn copy_dir_recursively(src: &Path, dst: &Path) -> Result<()> {
     use tokio::fs;
 
     fs::create_dir_all(dst).await?;
@@ -94,4 +97,42 @@ pub async fn copy_dir_recursively(src: &Path, dst: &Path) -> Result<(), Error> {
     }
 
     Ok(())
+}
+
+/// Renders a byte count for display, in decimal units to match how Apple's own tools report
+/// file sizes. Sub-megabyte values keep whole units because a decimal place there is noise.
+pub fn format_bytes(bytes: u64) -> String {
+    const KB: u64 = 1_000;
+    const MB: u64 = 1_000 * KB;
+    const GB: u64 = 1_000 * MB;
+
+    if bytes >= GB {
+        format!("{:.1} GB", bytes as f64 / GB as f64)
+    } else if bytes >= MB {
+        format!("{:.1} MB", bytes as f64 / MB as f64)
+    } else if bytes >= KB {
+        format!("{} KB", bytes / KB)
+    } else {
+        format!("{} B", bytes)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn format_bytes_picks_a_unit_per_magnitude() {
+        assert_eq!(format_bytes(0), "0 B");
+        assert_eq!(format_bytes(999), "999 B");
+        assert_eq!(format_bytes(1_000), "1 KB");
+        assert_eq!(format_bytes(999_999), "999 KB");
+        assert_eq!(format_bytes(1_000_000), "1.0 MB");
+        assert_eq!(format_bytes(1_000_000_000), "1.0 GB");
+    }
+
+    #[test]
+    fn format_bytes_rounds_to_one_decimal_at_megabytes() {
+        assert_eq!(format_bytes(54_741_568), "54.7 MB");
+    }
 }
