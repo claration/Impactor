@@ -168,7 +168,10 @@ impl SettingsScreen {
                         })
                         .placeholder(placeholder)
                         .on_open(Message::FetchTeams(email.to_string()))
-                        .style(appearance::s_pick_list);
+                        .style(appearance::s_pick_list)
+                        // Share the row evenly with the account button; otherwise a long
+                        // team name would grow the picker and squeeze the account list.
+                        .width(Fill);
 
                         account_row = account_row.push(team_pick);
                     }
