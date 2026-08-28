@@ -48,7 +48,7 @@ srp = "0.7.0-rc.1"
 # It has been fixed already but I am waiting for a new release before I can update the dependency.
 # Using native-tls avoids the issue.
 [target.'cfg(windows)'.dependencies]
-reqwest = { version = "0.13", features = ["json", "gzip", "native-tls"] }
+reqwest = { version = "0.13", features = ["json", "gzip", "native-tls", "system-proxy"] }
 
 [features]
 default = []
