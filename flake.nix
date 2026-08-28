@@ -1,7 +1,10 @@
 {
 	inputs = {
 		nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-		rust-overlay.url = "github:oxalica/rust-overlay";
+		rust-overlay = {
+			url = "github:oxalica/rust-overlay";
+			inputs.nixpkgs.follows = "nixpkgs";
+		};
 	};
 
 	outputs = {
@@ -30,24 +33,28 @@
 			forAllSystems (pkgs: {
 					default =
 						pkgs.mkShell {
-							nativeBuildInputs = with pkgs; [
-								pkg-config
-								gtk3
-								libayatana-appindicator
-								libappindicator
-							];
+							nativeBuildInputs = with pkgs;
+								[
+									pkg-config
+								]
+								++ (lib.lists.optionals stdenv.hostPlatform.isLinux [
+										gtk3
+										libayatana-appindicator
+										libappindicator
+									]);
 							buildInputs = with pkgs; [
 								nixd
+								alejandra
 								(rust-bin.stable.latest.default.override {
 										extensions = ["rust-src" "rust-analyzer"];
 									})
 							];
-							shellHook = with pkgs; ''
-								export LD_LIBRARY_PATH="${lib.makeLibraryPath [
-									libayatana-appindicator
-									libappindicator
-								]}:$LD_LIBRARY_PATH"
-							'';
+							shellHook = with pkgs; (lib.optionalString stdenv.hostPlatform.isLinux ''
+									export LD_LIBRARY_PATH="${lib.makeLibraryPath [
+											libayatana-appindicator
+											libappindicator
+										]}:$LD_LIBRARY_PATH"
+								'');
 						};
 				});
 	};
