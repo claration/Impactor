@@ -153,26 +153,27 @@ impl PackageScreen {
                 Task::none()
             }
             Message::AddTweak => {
-                let path = rfd::FileDialog::new()
+                let paths = rfd::FileDialog::new()
                     .add_filter("Tweak files", &["deb", "dylib"])
-                    .set_title("Select Tweak File")
-                    .pick_file();
+                    .set_title("Select Tweak File(s)")
+                    .pick_files();
 
-                if let Some(path) = path {
+                if let Some(paths) = paths {
                     match &mut self.options.tweaks {
-                        Some(vec) => vec.push(path),
-                        None => self.options.tweaks = Some(vec![path]),
+                        Some(vec) => vec.extend(paths),
+                        None => self.options.tweaks = Some(paths),
                     }
                 }
 
                 Task::none()
             }
             Message::AddBundle => {
-                let path = rfd::FileDialog::new()
-                    .set_title("Select Bundle Folder")
-                    .pick_folder();
+                let paths = rfd::FileDialog::new()
+                    .set_title("Select Bundle Folder(s)")
+                    .pick_folders()
+                    .unwrap_or_default();
 
-                if let Some(path) = path {
+                for path in paths {
                     if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
                         if ["framework", "bundle", "appex"].contains(&ext) {
                             match &mut self.options.tweaks {
