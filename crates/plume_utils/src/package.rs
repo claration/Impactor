@@ -205,7 +205,7 @@ impl Package {
                     .strip_prefix(prefix)
                     .map_err(|_| Error::PackageInfoPlistMissing)?
                     .to_string_lossy()
-                    .to_string();
+                    .replace('\\', "/");
 
                 if entry_path.is_file() {
                     zip.start_file(&name, options.clone())?;
