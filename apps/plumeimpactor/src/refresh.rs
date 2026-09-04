@@ -261,9 +261,11 @@ impl RefreshDaemon {
         session: &DeveloperSession,
         team_id: &str,
     ) -> Result<(), String> {
+        let platform = device.developer_platform();
+
         let team_id_string = team_id.to_string();
         session
-            .qh_ensure_device(&team_id_string, &device.name, &device.udid)
+            .qh_ensure_device(&team_id_string, &device.name, &device.udid, platform)
             .await
             .map_err(|e| format!("Failed to ensure device: {}", e))?;
 
@@ -291,7 +293,7 @@ impl RefreshDaemon {
         let mut signer = Signer::new(Some(signing_identity), options);
 
         signer
-            .register_bundle(&bundle, session, &team_id.to_string(), true)
+            .register_bundle(&bundle, session, &team_id.to_string(), true, platform)
             .await
             .map_err(|e| format!("Failed to register bundle: {}", e))?;
 
@@ -332,7 +334,13 @@ impl RefreshDaemon {
         let mut signer = Signer::new(None, options);
 
         signer
-            .register_bundle(&bundle, session, &team_id.to_string(), true)
+            .register_bundle(
+                &bundle,
+                session,
+                &team_id.to_string(),
+                true,
+                device.developer_platform(),
+            )
             .await
             .map_err(|e| format!("Failed to register bundle: {}", e))?;
 
