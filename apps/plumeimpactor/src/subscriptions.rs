@@ -30,6 +30,7 @@ pub(crate) fn device_listener() -> Subscription<Message> {
                                 let _ = tx.unbounded_send(Message::DeviceConnected(Device {
                                     name: "This Mac".into(),
                                     udid: mac_udid,
+                                    product_type: None,
                                     device_id: u32::MAX,
                                     usbmuxd_device: None,
                                     is_mac: true,
@@ -348,9 +349,14 @@ pub(crate) async fn run_installation(
 
             send("Ensuring device is registered...".to_string(), 30);
 
+            let platform = device
+                .as_ref()
+                .map(|dev| dev.developer_platform())
+                .unwrap_or_default();
+
             if let Some(dev) = &device {
                 session
-                    .qh_ensure_device(team_id, &dev.name, &dev.udid)
+                    .qh_ensure_device(team_id, &dev.name, &dev.udid, platform)
                     .await
                     .map_err(|e| e.to_string())?;
             }
@@ -368,7 +374,7 @@ pub(crate) async fn run_installation(
                 .await
                 .map_err(|e| e.to_string())?;
             signer
-                .register_bundle(&bundle, &session, team_id, false)
+                .register_bundle(&bundle, &session, team_id, false, platform)
                 .await
                 .map_err(|e| e.to_string())?;
             signer

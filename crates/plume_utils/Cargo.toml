@@ -16,6 +16,7 @@ tokio.workspace = true
 futures.workspace = true
 log.workspace = true
 image.workspace = true
+mdns-sd.workspace = true
 goblin.workspace = true
 zip.workspace = true
 flate2.workspace = true
