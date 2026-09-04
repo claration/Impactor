@@ -53,6 +53,10 @@ rustls = { version = "0.23", default-features = false, features = [
     "ring",
 ] }
 image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+# Discovery
+# `async` (default) is required: it enables the flume async receiver used to
+# poll browse events from the tokio runtime.
+mdns-sd = "0.21"
 # Compression
 flate2 = "1.1"
 zip = "8.6"
