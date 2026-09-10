@@ -96,7 +96,19 @@ impl Account {
             .send()
             .await?;
 
-        let res: plist::Dictionary = plist::from_bytes(res.text().await?.as_bytes())?;
+        let status = res.status();
+        let body = res.text().await?;
+        if !status.is_success() {
+            // Same rationale as `parse_response`: surface the HTTP status and
+            // the request stage instead of a confusing plist/HTML parse error.
+            return Err(Error::AuthSrpWithMessage(
+                status.as_u16() as i64,
+                format!(
+                    "Apple authentication request to https://gsa.apple.com/grandslam/GsService2/validate returned HTTP {status} (expected a GSA plist)."
+                ),
+            ));
+        }
+        let res: plist::Dictionary = plist::from_bytes(body.as_bytes())?;
 
         super::check_error(&res)?;
 

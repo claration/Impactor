@@ -187,12 +187,16 @@ impl AnisetteClient {
     pub async fn new(url: String) -> Result<AnisetteClient, AnisetteError> {
         let path = format!("{}/v3/client_info", url);
         let http_client = make_reqwest()?;
-        let client_info = http_client
+        let mut client_info = http_client
             .get(path)
             .send()
             .await?
             .json::<AnisetteClientInfo>()
             .await?;
+        // Third-party anisette servers commonly still serve the stale
+        // `com.apple.dt.Xcode/...` client token, which Apple's edge now
+        // rejects with HTTP 503 — sanitize before it is ever sent to Apple.
+        client_info.client_info = crate::sanitize_gsa_client_info(&client_info.client_info);
         Ok(AnisetteClient { client_info, url })
     }
 

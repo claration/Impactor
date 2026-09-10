@@ -59,6 +59,57 @@ pub const DEFAULT_ANISETTE_URL: &str = "https://ani.f1sh.me/";
 
 pub const DEFAULT_ANISETTE_URL_V3: &str = "https://ani.sidestore.app";
 
+/// Client identifier Apple currently accepts in the `X-MMe-Client-Info` header
+/// of GrandSlam (`gsa.apple.com`) requests.
+///
+/// Since early September 2026 Apple's authentication edge answers HTTP 503
+/// (a short HTML page, not a GSA plist) to any request whose client token is
+/// `com.apple.dt.Xcode/...`, before any credential is checked. Reporting the
+/// client as `akd` — the daemon that performs this request on macOS — restores
+/// authentication. Same approach as AltStore PR #1790.
+///
+/// NOTE: this is unrelated to the `com.apple.gs.xcode.auth` *app* identifier
+/// (used for `X-Apple-App-Info` / apptoken requests) — that one must stay as is.
+pub const AUTHKIT_CLIENT_INFO: &str = "com.apple.AuthKit/1 (com.apple.akd/1.0)";
+
+/// Blocked client-token prefix inside `X-MMe-Client-Info`.
+const BLOCKED_GSA_CLIENT_TOKEN_PREFIX: &str = "com.apple.dt.Xcode";
+
+/// Accepted replacement client token inside `X-MMe-Client-Info`.
+pub const GSA_CLIENT_TOKEN: &str = "com.apple.akd/1.0";
+
+/// Replace any blocked `com.apple.dt.Xcode/<version>` client token in an
+/// `X-MMe-Client-Info` value with the accepted `com.apple.akd/1.0` token.
+///
+/// Third-party anisette servers commonly still serve the stale Xcode string,
+/// so values received from them are passed through here before being sent to
+/// Apple. Anything that does not contain the blocked token is returned
+/// unchanged.
+pub fn sanitize_gsa_client_info(info: &str) -> String {
+    let mut out = String::with_capacity(info.len());
+    let mut rest = info;
+    while let Some(pos) = rest.find(BLOCKED_GSA_CLIENT_TOKEN_PREFIX) {
+        out.push_str(&rest[..pos]);
+        let mut end = pos + BLOCKED_GSA_CLIENT_TOKEN_PREFIX.len();
+        // Skip the trailing `/version` (e.g. `/3594.4.19`), if present.
+        let bytes = rest.as_bytes();
+        if bytes.get(end) == Some(&b'/') {
+            end += 1;
+            while let Some(&b) = bytes.get(end) {
+                if b.is_ascii_alphanumeric() || b == b'.' || b == b'-' || b == b'_' {
+                    end += 1;
+                } else {
+                    break;
+                }
+            }
+        }
+        out.push_str(GSA_CLIENT_TOKEN);
+        rest = &rest[end..];
+    }
+    out.push_str(rest);
+    out
+}
+
 #[derive(Clone, Debug)]
 pub struct AnisetteConfiguration {
     anisette_url: String,
@@ -207,5 +258,51 @@ mod tests {
             provider.provider.get_authentication_headers()?
         );
         Ok(())
+    }
+
+    #[test]
+    fn gsa_client_info_avoids_blocked_xcode_token() {
+        assert!(
+            crate::AUTHKIT_CLIENT_INFO.contains(crate::GSA_CLIENT_TOKEN),
+            "unexpected AUTHKIT_CLIENT_INFO: {}",
+            crate::AUTHKIT_CLIENT_INFO
+        );
+        assert!(
+            !crate::AUTHKIT_CLIENT_INFO.contains("com.apple.dt.Xcode"),
+            "blocked Xcode token in AUTHKIT_CLIENT_INFO: {}",
+            crate::AUTHKIT_CLIENT_INFO
+        );
+        assert!(
+            crate::adi_proxy::CLIENT_INFO_HEADER.contains(crate::AUTHKIT_CLIENT_INFO),
+            "CLIENT_INFO_HEADER diverged: {}",
+            crate::adi_proxy::CLIENT_INFO_HEADER
+        );
+        assert!(
+            !crate::adi_proxy::CLIENT_INFO_HEADER.contains("com.apple.dt.Xcode"),
+            "blocked Xcode token still in CLIENT_INFO_HEADER: {}",
+            crate::adi_proxy::CLIENT_INFO_HEADER
+        );
+    }
+
+    #[test]
+    fn sanitize_gsa_client_info_replaces_blocked_token() {
+        // The block is on `com.apple.dt.Xcode` regardless of version.
+        for version in ["3594.4.19", "9999.9.99", "1.0"] {
+            let input = format!(
+                "<Mac14,2> <macOS;15.7.5;24G624> <com.apple.AuthKit/1 (com.apple.dt.Xcode/{version})>"
+            );
+            let out = crate::sanitize_gsa_client_info(&input);
+            assert!(
+                out.contains("com.apple.akd/1.0"),
+                "expected accepted akd token for version {version}, got: {out}"
+            );
+            assert!(
+                !out.contains("com.apple.dt.Xcode"),
+                "blocked Xcode token still present: {out}"
+            );
+        }
+        // Already-accepted values pass through unchanged.
+        let good = "<Mac14,2> <macOS;15.7.5;24G624> <com.apple.AuthKit/1 (com.apple.akd/1.0)>";
+        assert_eq!(crate::sanitize_gsa_client_info(good), good);
     }
 }

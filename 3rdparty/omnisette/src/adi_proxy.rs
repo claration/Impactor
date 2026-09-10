@@ -122,8 +122,13 @@ pub trait ConfigurableADIProxy: ADIProxy {
 }
 
 pub const AKD_USER_AGENT: &str = "akd/1.0 CFNetwork/808.1.4";
+// NOTE: the client token here must NOT be `com.apple.dt.Xcode/...` — since
+// early September 2026 Apple's authentication edge returns HTTP 503 for any
+// GrandSlam request carrying it (see `crate::AUTHKIT_CLIENT_INFO` and AltStore
+// PR #1790). This is unrelated to the `com.apple.gs.xcode.auth` app identifier,
+// which intentionally still mentions Xcode.
 pub const CLIENT_INFO_HEADER: &str =
-    "<MacBookPro13,2> <macOS;13.1;22C65> <com.apple.AuthKit/1 (com.apple.dt.Xcode/3594.4.19)>";
+    "<MacBookPro13,2> <macOS;13.1;22C65> <com.apple.AuthKit/1 (com.apple.akd/1.0)>";
 pub const DS_ID: i64 = -2;
 pub const IDENTIFIER_LENGTH: usize = 16;
 pub type Identifier = [u8; IDENTIFIER_LENGTH];
