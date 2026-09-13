@@ -5,8 +5,9 @@ use tray_icon::{TrayIconEvent, menu::MenuEvent};
 
 use crate::{
     defaults::get_data_path,
-    screen::{Message, general},
+    screen::{Message, general, progress::ProgressUpdate},
 };
+use plume_utils::discovery::{DeviceDiscovery, PlatformDiscovery};
 use plume_utils::{Bundle, Device, PlistInfoTrait};
 
 pub(crate) fn device_listener() -> Subscription<Message> {
@@ -30,9 +31,18 @@ pub(crate) fn device_listener() -> Subscription<Message> {
                                 let _ = tx.unbounded_send(Message::DeviceConnected(Device {
                                     name: "This Mac".into(),
                                     udid: mac_udid,
+                                    product_type: None,
+                                    device_class: Some("Mac".to_string()),
+                                    os_version: None,
+                                    serial_number: None,
                                     device_id: u32::MAX,
                                     usbmuxd_device: None,
                                     is_mac: true,
+                                    pairing_address: None,
+                                    reconnect_address: None,
+                                    pairing_identity: None,
+                                    pairing_cache_dir: None,
+                                    core_device_authenticated: false,
                                 }));
                             }
                         }
@@ -42,8 +52,10 @@ pub(crate) fn device_listener() -> Subscription<Message> {
                         };
 
                         if let Ok(devices) = muxer.get_devices().await {
-                            for dev in devices {
-                                let device = Device::new(dev).await;
+                            let device_futures = devices.into_iter().map(Device::new);
+                            for device in plume_utils::deduplicate_devices(
+                                futures::future::join_all(device_futures).await,
+                            ) {
                                 let _ = tx.unbounded_send(Message::DeviceConnected(device));
                             }
                         }
@@ -63,6 +75,119 @@ pub(crate) fn device_listener() -> Subscription<Message> {
                                 Err(_) => continue,
                             };
                             let _ = tx.unbounded_send(msg);
+                        }
+                    });
+                });
+
+                while let Some(message) = rx.next().await {
+                    let _ = output.send(message).await;
+                }
+            },
+        )
+    })
+}
+
+pub(crate) fn network_device_listener() -> Subscription<Message> {
+    Subscription::run(|| {
+        iced::stream::channel(
+            100,
+            |mut output: iced::futures::channel::mpsc::Sender<Message>| async move {
+                use iced::futures::{SinkExt, StreamExt};
+                use std::collections::{HashMap, HashSet};
+
+                let (tx, mut rx) = iced::futures::channel::mpsc::unbounded::<Message>();
+
+                std::thread::spawn(move || {
+                    let rt = tokio::runtime::Builder::new_current_thread()
+                        .enable_all()
+                        .build()
+                        .unwrap();
+
+                    rt.block_on(async move {
+                        type EmittedState = (
+                            Option<(std::net::IpAddr, u16)>,
+                            Option<(std::net::IpAddr, u16)>,
+                            String,
+                        );
+
+                        let mut present_ids: HashSet<u32> = HashSet::new();
+                        let mut last_emitted: HashMap<u32, EmittedState> = HashMap::new();
+                        let mut miss_counts: HashMap<u32, u32> = HashMap::new();
+                        let mut enriched: HashMap<u32, plume_utils::TvosDeviceInfo> =
+                            HashMap::new();
+
+                        loop {
+                            let scan_started = std::time::Instant::now();
+                            let scan_result = PlatformDiscovery::new()
+                                .discover(std::time::Duration::from_secs(5))
+                                .await;
+
+                            match scan_result {
+                                Ok(discovered) => {
+                                    let cache_dir = get_data_path();
+                                    let devices = plume_utils::discovery::group_network_devices(
+                                        &discovered,
+                                        &cache_dir,
+                                    );
+
+                                    let mut current_ids: HashSet<u32> = HashSet::new();
+
+                                    for mut device in devices {
+                                        let id = device.device_id;
+                                        current_ids.insert(id);
+                                        miss_counts.remove(&id);
+
+                                        if let Some(info) = enriched.get(&id) {
+                                            device.apply_tvos_info(info);
+                                        } else if device.has_pairing_source(&cache_dir) {
+                                            match device.fetch_tvos_info(cache_dir.clone()).await {
+                                                Ok(info) => {
+                                                    device.apply_tvos_info(&info);
+                                                    enriched.insert(id, info);
+                                                }
+                                                Err(e) => {
+                                                    log::warn!(
+                                                        "Could not fetch tvOS identity for {}: {e}",
+                                                        device.name
+                                                    );
+                                                }
+                                            }
+                                        }
+
+                                        let state: EmittedState = (
+                                            device.pairing_address,
+                                            device.reconnect_address,
+                                            device.udid.clone(),
+                                        );
+                                        let changed = last_emitted.get(&id) != Some(&state);
+
+                                        if !present_ids.contains(&id) || changed {
+                                            present_ids.insert(id);
+                                            last_emitted.insert(id, state);
+                                            let _ =
+                                                tx.unbounded_send(Message::DeviceConnected(device));
+                                        }
+                                    }
+
+                                    for id in plume_utils::discovery::disconnected_after_missed_scans(
+                                        &mut present_ids,
+                                        &current_ids,
+                                        &mut miss_counts,
+                                        2,
+                                    ) {
+                                        let _ = tx.unbounded_send(Message::DeviceDisconnected(id));
+                                        last_emitted.remove(&id);
+                                    }
+                                }
+                                Err(e) => {
+                                    log::warn!("Network device scan failed: {e}");
+                                }
+                            }
+
+                            let elapsed = scan_started.elapsed();
+                            let sleep_for =
+                                std::time::Duration::from_secs(30).saturating_sub(elapsed);
+                            tokio::time::sleep(sleep_for).await;
                         }
                     });
                 });
@@ -219,12 +344,12 @@ pub(crate) fn file_hover_subscription() -> Subscription<Message> {
 }
 
 pub(crate) fn installation_progress_listener(
-    progress_rx: Option<Arc<std::sync::Mutex<std::sync::mpsc::Receiver<(String, i32)>>>>,
-) -> Subscription<(String, i32)> {
+    progress_rx: Option<Arc<std::sync::Mutex<std::sync::mpsc::Receiver<ProgressUpdate>>>>,
+) -> Subscription<ProgressUpdate> {
     match progress_rx {
         Some(rx) => {
             struct State {
-                rx: Arc<std::sync::Mutex<std::sync::mpsc::Receiver<(String, i32)>>>,
+                rx: Arc<std::sync::Mutex<std::sync::mpsc::Receiver<ProgressUpdate>>>,
             }
 
             impl std::hash::Hash for State {
@@ -238,25 +363,19 @@ pub(crate) fn installation_progress_listener(
                 let rx = state.rx.clone();
                 iced::stream::channel(
                     100,
-                    move |mut output: iced::futures::channel::mpsc::Sender<(String, i32)>| async move {
+                    move |mut output: iced::futures::channel::mpsc::Sender<ProgressUpdate>| async move {
                         use iced::futures::{SinkExt, StreamExt};
 
                         let (tx, mut rx_stream) =
-                            iced::futures::channel::mpsc::unbounded::<(String, i32)>();
+                            iced::futures::channel::mpsc::unbounded::<ProgressUpdate>();
 
                         let rx_thread = rx.clone();
                         std::thread::spawn(move || {
                             loop {
-                                let message = {
-                                    if let Ok(guard) = rx_thread.lock() {
-                                        guard.try_recv().ok()
-                                    } else {
-                                        None
+                                if let Ok(guard) = rx_thread.lock() {
+                                    while let Ok(update) = guard.try_recv() {
+                                        let _ = tx.unbounded_send(update);
                                     }
-                                };
-
-                                if let Some((status, progress)) = message {
-                                    let _ = tx.unbounded_send((status, progress));
                                 }
 
                                 std::thread::sleep(std::time::Duration::from_millis(100));
@@ -280,16 +399,35 @@ pub(crate) async fn run_installation(
     options: &plume_utils::SignerOptions,
     account: Option<&plume_store::GsaAccount>,
     mut store: Option<&mut plume_store::AccountStore>,
-    tx: &std::sync::mpsc::Sender<(String, i32)>,
+    tx: &std::sync::mpsc::Sender<ProgressUpdate>,
 ) -> Result<(), String> {
-    use plume_core::{AnisetteConfiguration, CertificateIdentity, developer::DeveloperSession};
+    use plume_core::{
+        AnisetteConfiguration, CertificateIdentity,
+        developer::{DeveloperPlatform, DeveloperSession},
+    };
     use plume_utils::{Signer, SignerInstallMode, SignerMode};
 
     let package_file: Bundle;
     let mut options = options.clone();
     let send = |msg: String, progress: i32| {
-        let _ = tx.send((msg, progress));
+        let _ = tx.send(ProgressUpdate::new(msg, progress));
     };
+    let platform = match device {
+        Some(dev) if dev.is_tvos() => DeveloperPlatform::Tvos,
+        _ => DeveloperPlatform::Ios,
+    };
+    let device_udid = device
+        .filter(|dev| !dev.is_mac)
+        .map(|dev| dev.udid.as_str());
+
+    if let Some(dev) = device.filter(|dev| !dev.is_mac)
+        && !plume_utils::is_valid_device_udid(&dev.udid)
+    {
+        return Err(format!(
+            "Authenticated {} UDID is unavailable; pair or reconnect before installing",
+            dev.name
+        ));
+    }
 
     send("Preparing package...".to_string(), 10);
 
@@ -348,9 +486,9 @@ pub(crate) async fn run_installation(
 
             send("Ensuring device is registered...".to_string(), 30);
 
-            if let Some(dev) = &device {
+            if let Some(dev) = device.filter(|dev| !dev.is_mac) {
                 session
-                    .qh_ensure_device(team_id, &dev.name, &dev.udid)
+                    .qh_ensure_device(team_id, &dev.name, &dev.udid, platform)
                     .await
                     .map_err(|e| e.to_string())?;
             }
@@ -361,19 +499,31 @@ pub(crate) async fn run_installation(
 
             let bundle = package.get_package_bundle().map_err(|e| e.to_string())?;
 
-            send("Signing package...".to_string(), 70);
+            send("Preparing provisioning profiles...".to_string(), 60);
 
             signer
                 .modify_bundle(&bundle, &Some(team_id.clone()))
                 .await
                 .map_err(|e| e.to_string())?;
             signer
-                .register_bundle(&bundle, &session, team_id, false)
+                .register_bundle_for_device(
+                    &bundle,
+                    &session,
+                    team_id,
+                    false,
+                    platform,
+                    device_udid,
+                )
                 .await
                 .map_err(|e| e.to_string())?;
+            send("Signing package...".to_string(), 70);
             signer
-                .sign_bundle(&bundle)
+                .sign_bundle_for_device(&bundle, platform, device_udid)
                 .await
+                .map_err(|e| e.to_string())?;
+            send("Verifying signatures and provisioning profiles...".to_string(), 82);
+            signer
+                .validate_signed_bundle(&bundle, platform, device_udid)
                 .map_err(|e| e.to_string())?;
 
             options = signer.options.clone();
@@ -396,6 +546,9 @@ pub(crate) async fn run_installation(
                 .sign_bundle(&bundle)
                 .await
                 .map_err(|e| e.to_string())?;
+            signer
+                .validate_signed_bundle(&bundle, platform, None)
+                .map_err(|e| e.to_string())?;
 
             options = signer.options.clone();
             package_file = bundle;
@@ -413,15 +566,58 @@ pub(crate) async fn run_installation(
         SignerInstallMode::Install => {
             if let Some(dev) = &device {
                 if !dev.is_mac {
-                    send("Sending to device...".to_string(), 70);
+                    let upload_path = if dev.is_network() {
+                        let _ = tx.send(ProgressUpdate::indeterminate(
+                            "Packaging for transfer...".to_string(),
+                            70,
+                        ));
+
+                        let archive_package = package.clone();
+                        let bundle_dir = package_file.bundle_dir().clone();
+                        tokio::task::spawn_blocking(move || {
+                            archive_package.get_archive_based_on_path(&bundle_dir)
+                        })
+                        .await
+                        .map_err(|e| format!("Packaging task failed: {e}"))?
+                        .map_err(|e| format!("Failed to package for transfer: {e}"))?
+                    } else {
+                        package_file.bundle_dir().clone()
+                    };
+
+                    if upload_path.is_file() {
+                        plume_utils::Package::validate_archive(
+                            &upload_path,
+                            options.mode == SignerMode::Pem,
+                        )
+                        .map_err(|e| format!("Produced package failed validation: {e}"))?;
+                    }
+
+                    if dev.is_network() {
+                        let _ = tx.send(ProgressUpdate::indeterminate(
+                            "Pairing/reconnecting to Apple TV...".to_string(),
+                            72,
+                        ));
+                    }
+
+                    let upload_status = match tokio::fs::metadata(&upload_path).await {
+                        Ok(meta) if meta.is_file() => format!(
+                            "Sending to device ({})...",
+                            plume_utils::format_bytes(meta.len())
+                        ),
+                        _ => "Sending to device...".to_string(),
+                    };
+                    let _ = tx.send(ProgressUpdate::indeterminate(upload_status, 70));
 
                     let tx_clone = tx.clone();
-                    dev.install_app(&package_file.bundle_dir(), move |progress: i32| {
+                    dev.install_app(&upload_path, move |progress: i32| {
                         let tx = tx_clone.clone();
                         // Some libraries expect this future to be processed.
                         // We ensure it sends and resolves immediately.
                         Box::pin(async move {
-                            let _ = tx.send(("Installing...".to_string(), 70 + (progress / 5)));
+                            let _ = tx.send(ProgressUpdate::new(
+                                "Installing...".to_string(),
+                                70 + (progress / 5),
+                            ));
                         })
                     })
                     .await
@@ -457,6 +653,11 @@ pub(crate) async fn run_installation(
             let archive_path = package
                 .get_archive_based_on_path(&package_file.bundle_dir())
                 .map_err(|e| e.to_string())?;
+            plume_utils::Package::validate_archive(
+                &archive_path,
+                options.mode == SignerMode::Pem,
+            )
+            .map_err(|e| e.to_string())?;
 
             let file = rfd::AsyncFileDialog::new()
                 .set_title("Save Package As")
@@ -478,7 +679,7 @@ pub(crate) async fn run_installation(
     }
 
     if options.refresh && options.mode == SignerMode::Pem {
-        send("Saving for refresh...".to_string(), 75);
+        send("Saving for refresh...".to_string(), 99);
         let path = get_data_path().join("refresh_store");
         tokio::fs::create_dir_all(&path)
             .await

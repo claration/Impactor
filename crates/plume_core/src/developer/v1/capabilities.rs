@@ -4,6 +4,7 @@ use serde_json::json;
 
 use super::{DeveloperSession, RequestType};
 use crate::developer_endpoint;
+use crate::developer::DeveloperPlatform;
 
 use crate::Error;
 use std::collections::HashSet;
@@ -22,11 +23,20 @@ const FREE_DEVELOPER_ACCOUNT_UNALLOWED_CAPABILITIES: &[&str] = &[
 
 impl DeveloperSession {
     pub async fn v1_list_capabilities(&self, team: &String) -> Result<CapabilitiesResponse, Error> {
+        self.v1_list_capabilities_for_platform(team, DeveloperPlatform::Ios)
+            .await
+    }
+
+    pub async fn v1_list_capabilities_for_platform(
+        &self,
+        team: &String,
+        platform: DeveloperPlatform,
+    ) -> Result<CapabilitiesResponse, Error> {
         let endpoint = developer_endpoint!("/v1/capabilities");
 
         let body = json!({
             "teamId": team,
-            "urlEncodedQueryParams": "filter[platform]=IOS"
+            "urlEncodedQueryParams": format!("filter[platform]={}", platform.capabilities_filter())
         });
 
         let response = self
@@ -43,7 +53,26 @@ impl DeveloperSession {
         id: &String,
         entitlements: &Dictionary,
     ) -> Result<(), Error> {
-        let capabilities = self.v1_list_capabilities(team).await?.data;
+        self.v1_request_capabilities_for_entitlements_on_platform(
+            team,
+            id,
+            entitlements,
+            DeveloperPlatform::Ios,
+        )
+        .await
+    }
+
+    pub async fn v1_request_capabilities_for_entitlements_on_platform(
+        &self,
+        team: &String,
+        id: &String,
+        entitlements: &Dictionary,
+        platform: DeveloperPlatform,
+    ) -> Result<(), Error> {
+        let capabilities = self
+            .v1_list_capabilities_for_platform(team, platform)
+            .await?
+            .data;
         let entitlement_keys: HashSet<&str> = entitlements.keys().map(|k| k.as_str()).collect();
 
         // Collect capability IDs that match entitlement keys and are allowed for free accounts

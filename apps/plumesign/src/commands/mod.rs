@@ -29,4 +29,5 @@ pub enum Commands {
     Account(account::AccountArgs),
     /// Device management commands
     Device(device::DeviceArgs),
+    Pair(device::PairArgs),
 }

@@ -2,11 +2,15 @@ pub mod auth;
 pub mod developer;
 mod utils;
 
-pub use apple_codesign::{AppleCodesignError, SettingsScope, SigningSettings, UnifiedSigner};
+pub use apple_codesign::{
+    AppleCodesignError, SettingsScope, SigningSettings, UnifiedSigner, verify_macho_data,
+};
 
 pub use omnisette::AnisetteConfiguration;
 
-pub use utils::{CertificateIdentity, MachO, MachOExt, MobileProvision};
+pub use utils::{
+    CertificateIdentity, MachO, MachOExt, MobileProvision, is_valid_device_udid,
+};
 
 use thiserror::Error as ThisError;
 #[derive(Debug, ThisError)]
@@ -68,6 +72,8 @@ pub enum Error {
     Slice(#[from] std::array::TryFromSliceError),
     #[error("Invalid key length for AES-GCM: {0}")]
     SHA2(#[from] sha2::digest::InvalidLength),
+    #[error("Provisioning profile invalid: {0}")]
+    ProvisioningProfileInvalid(String),
 }
 
 pub fn client() -> Result<reqwest::Client, Error> {

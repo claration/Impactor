@@ -127,9 +127,18 @@ pub async fn execute(args: SignArgs) -> Result<()> {
                 Some(Device {
                     name: "My Mac".to_string(),
                     udid: String::new(),
+                    product_type: None,
+                    device_class: Some("Mac".to_string()),
+                    os_version: None,
+                    serial_number: None,
                     device_id: 0,
                     usbmuxd_device: None,
                     is_mac: true,
+                    pairing_address: None,
+                    reconnect_address: None,
+                    pairing_identity: None,
+                    pairing_cache_dir: None,
+                    core_device_authenticated: false,
                 })
             } else {
                 Some(select_device(args.udid).await?)
@@ -143,30 +152,64 @@ pub async fn execute(args: SignArgs) -> Result<()> {
         None
     };
 
+    let platform = device
+        .as_ref()
+        .map(plume_utils::Device::developer_platform)
+        .unwrap_or_default();
+    let device_udid = device
+        .as_ref()
+        .filter(|device| !device.is_mac)
+        .map(|device| device.udid.as_str());
+    if let Some(device) = device.as_ref().filter(|device| !device.is_mac)
+        && !plume_utils::is_valid_device_udid(&device.udid)
+    {
+        return Err(anyhow::anyhow!(
+            "Authenticated Apple TV UDID is unavailable; pair or reconnect before installing"
+        ));
+    }
+
     if let Some((session, team_id)) = team_id_opt {
         signer
             .modify_bundle(&bundle, &Some(team_id.clone()))
             .await?;
 
-        if let Some(ref dev) = device {
+        if let Some(dev) = device.as_ref().filter(|device| !device.is_mac) {
             log::info!("Registering device: {} ({})", dev.name, dev.udid);
             session
-                .qh_ensure_device(&team_id, &dev.name, &dev.udid)
+                .qh_ensure_device(&team_id, &dev.name, &dev.udid, platform)
                 .await?;
         }
 
         signer
-            .register_bundle(&bundle, &session, &team_id, false)
+            .register_bundle_for_device(
+                &bundle,
+                &session,
+                &team_id,
+                false,
+                platform,
+                device_udid,
+            )
             .await?;
-        signer.sign_bundle(&bundle).await?;
+        signer
+            .sign_bundle_for_device(&bundle, platform, device_udid)
+            .await?;
+        signer.validate_signed_bundle(&bundle, platform, device_udid)?;
 
         if let Some(dev) = device {
             log::info!("Installing to device: {}", dev.name);
+            let install_path = if dev.is_network() {
+                let package = package
+                    .as_ref()
+                    .ok_or_else(|| anyhow::anyhow!("Network installation requires an IPA input"))?;
+                package.get_archive_based_on_path(&bundle.bundle_dir())?
+            } else {
+                bundle.bundle_dir().clone()
+            };
             #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
             if args.mac {
                 plume_utils::install_app_mac(&bundle.bundle_dir()).await?;
             } else {
-                dev.install_app(bundle.bundle_dir(), |progress| async move {
+                dev.install_app(&install_path, |progress| async move {
                     log::info!("Installation progress: {}%", progress);
                 })
                 .await?;
@@ -174,7 +217,7 @@ pub async fn execute(args: SignArgs) -> Result<()> {
 
             #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
             {
-                dev.install_app(bundle.bundle_dir(), |progress| async move {
+                dev.install_app(&install_path, |progress| async move {
                     log::info!("Installation progress: {}%", progress);
                 })
                 .await?;
@@ -184,11 +227,22 @@ pub async fn execute(args: SignArgs) -> Result<()> {
         }
     } else {
         signer.modify_bundle(&bundle, &None).await?;
-        signer.sign_bundle(&bundle).await?;
+        signer
+            .sign_bundle_for_device(&bundle, platform, device_udid)
+            .await?;
+        signer.validate_signed_bundle(&bundle, platform, device_udid)?;
 
         if let Some(dev) = device {
             log::info!("Installing to device: {}", dev.name);
-            dev.install_app(bundle.bundle_dir(), |progress| async move {
+            let install_path = if dev.is_network() {
+                let package = package
+                    .as_ref()
+                    .ok_or_else(|| anyhow::anyhow!("Network installation requires an IPA input"))?;
+                package.get_archive_based_on_path(&bundle.bundle_dir())?
+            } else {
+                bundle.bundle_dir().clone()
+            };
+            dev.install_app(&install_path, |progress| async move {
                 log::info!("Installation progress: {}%", progress);
             })
             .await?;
@@ -200,6 +254,7 @@ pub async fn execute(args: SignArgs) -> Result<()> {
     if let Some(pkg) = package {
         if let Some(output_path) = args.output {
             let archived_path = pkg.get_archive_based_on_path(&args.package.clone())?;
+            Package::validate_archive(&archived_path, signer.options.mode == SignerMode::Pem)?;
             tokio::fs::copy(&archived_path, &output_path).await?;
             log::info!("Saved signed package to: {}", output_path.display());
             if std::env::var("PLUME_DELETE_AFTER_FINISHED").is_err() {

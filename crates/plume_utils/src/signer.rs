@@ -6,7 +6,7 @@ use tokio::fs;
 
 use plume_core::{
     CertificateIdentity, MobileProvision, SettingsScope, SigningSettings, UnifiedSigner,
-    developer::DeveloperSession,
+    developer::{DeveloperPlatform, DeveloperSession},
 };
 
 use crate::{Bundle, BundleType, Error, PlistInfoTrait, SignerApp, SignerMode, SignerOptions};
@@ -228,6 +228,20 @@ impl Signer {
         session: &DeveloperSession,
         team_id: &String,
         is_refresh: bool,
+        platform: DeveloperPlatform,
+    ) -> Result<(), Error> {
+        self.register_bundle_for_device(bundle, session, team_id, is_refresh, platform, None)
+            .await
+    }
+
+    pub async fn register_bundle_for_device(
+        &mut self,
+        bundle: &Bundle,
+        session: &DeveloperSession,
+        team_id: &String,
+        is_refresh: bool,
+        platform: DeveloperPlatform,
+        device_udid: Option<&str>,
     ) -> Result<(), Error> {
         if self.options.mode != SignerMode::Pem {
             return Ok(());
@@ -243,6 +257,12 @@ impl Signer {
         let bundle_arc = Arc::new(bundle.clone());
         let session_arc = Arc::new(session);
         let team_id_arc = Arc::new(team_id.clone());
+        let device_udid = device_udid.map(str::to_owned);
+        let certificate_der = self
+            .certificate
+            .as_ref()
+            .and_then(CertificateIdentity::certificate_der)
+            .map(ToOwned::to_owned);
 
         let futures = bundles.iter().filter_map(|sub_bundle| {
             let sub_bundle = sub_bundle.clone();
@@ -250,8 +270,11 @@ impl Signer {
             let session = session_arc.clone();
             let team_id = team_id_arc.clone();
             let signer_settings = signer_settings.clone();
+            let device_udid = device_udid.clone();
+            let certificate_der = certificate_der.clone();
 
             if signer_settings.embedding.single_profile
+                && platform != DeveloperPlatform::Tvos
                 && sub_bundle.bundle_dir() != bundle.bundle_dir()
             {
                 return None;
@@ -276,16 +299,23 @@ impl Signer {
 
                 let name = sub_bundle.get_bundle_name().unwrap_or_else(|| id.clone());
 
-                session.qh_ensure_app_id(&team_id, &name, &id).await?;
+                session
+                    .qh_ensure_app_id(&team_id, &name, &id, platform)
+                    .await?;
 
                 let app_id_id = session
-                    .qh_get_app_id(&team_id, &id)
+                    .qh_get_app_id(&team_id, &id, platform)
                     .await?
                     .ok_or_else(|| Error::Other("Failed to get ensured app ID.".into()))?;
 
                 if let Some(e) = macho.entitlements().as_ref() {
                     session
-                        .v1_request_capabilities_for_entitlements(&team_id, &id, e)
+                        .v1_request_capabilities_for_entitlements_on_platform(
+                            &team_id,
+                            &id,
+                            e,
+                            platform,
+                        )
                         .await?;
                 }
 
@@ -337,17 +367,45 @@ impl Signer {
                 }
 
                 let profiles = session
-                    .qh_get_profile(&team_id, &app_id_id.app_id_id)
+                    .qh_get_profile(&team_id, &app_id_id.app_id_id, platform)
                     .await?;
-                let profile_data = profiles.provisioning_profile.encoded_profile;
+                let mut mobile_provision = MobileProvision::load_with_bytes(
+                    profiles.provisioning_profile.encoded_profile.as_ref().to_vec(),
+                )?;
+                let requested_entitlements = macho.entitlements().as_ref();
+                if let Err(error) = mobile_provision.validate_for(
+                    platform,
+                    &id,
+                    device_udid.as_deref(),
+                    certificate_der.as_deref(),
+                    requested_entitlements,
+                ) {
+                    log::warn!(
+                        "Cached or newly returned profile for {id} failed validation: {error}; requesting a replacement"
+                    );
+                    let refreshed = session
+                        .qh_get_profile(&team_id, &app_id_id.app_id_id, platform)
+                        .await?;
+                    mobile_provision = MobileProvision::load_with_bytes(
+                        refreshed.provisioning_profile.encoded_profile.as_ref().to_vec(),
+                    )?;
+                    mobile_provision.validate_for(
+                        platform,
+                        &id,
+                        device_udid.as_deref(),
+                        certificate_der.as_deref(),
+                        requested_entitlements,
+                    )
+                    .map_err(|replacement_error| {
+                        Error::Core(replacement_error)
+                    })?;
+                }
 
                 tokio::fs::write(
                     sub_bundle.bundle_dir().join("embedded.mobileprovision"),
-                    &profile_data,
+                    &mobile_provision.data,
                 )
                 .await?;
-                let mobile_provision =
-                    MobileProvision::load_with_bytes(profile_data.as_ref().to_vec())?;
                 Ok::<_, Error>(mobile_provision)
             })
         });
@@ -358,7 +416,206 @@ impl Signer {
         Ok(())
     }
 
+    pub fn validate_signed_bundle(
+        &self,
+        bundle: &Bundle,
+        platform: DeveloperPlatform,
+        device_udid: Option<&str>,
+    ) -> Result<(), Error> {
+        if self.options.mode == SignerMode::None {
+            return Ok(());
+        }
+
+        let certificate_der = self
+            .certificate
+            .as_ref()
+            .and_then(CertificateIdentity::certificate_der);
+
+        for signed_bundle in bundle.collect_bundles_sorted()? {
+            if *signed_bundle.bundle_type() == BundleType::Unknown {
+                continue;
+            }
+
+            let executable = if *signed_bundle.bundle_type() == BundleType::Dylib {
+                signed_bundle.bundle_dir().clone()
+            } else {
+                let executable_name = signed_bundle
+                    .get_executable()
+                    .ok_or_else(|| Error::Other("Signed bundle has no executable".to_string()))?;
+                signed_bundle.bundle_dir().join(executable_name)
+            };
+            let macho = plume_core::MachO::new(&executable)?;
+            let has_code_signature = macho
+                .macho_file()
+                .nth_macho(0)?
+                .code_signature()?
+                .is_some();
+            if !has_code_signature {
+                return Err(Error::Other(format!(
+                    "Signed bundle {} has no code signature",
+                    signed_bundle.bundle_dir().display()
+                )));
+            }
+
+            if self.options.mode != SignerMode::Adhoc {
+                let verification_problems =
+                    plume_core::verify_macho_data(std::fs::read(&executable)?);
+                if let Some(problem) = verification_problems.first() {
+                    return Err(Error::Other(format!(
+                        "Signature verification failed for {}: {problem}",
+                        signed_bundle.bundle_dir().display()
+                    )));
+                }
+            }
+
+            if !signed_bundle.bundle_type().should_have_entitlements() {
+                continue;
+            }
+
+            let bundle_id = signed_bundle
+                .get_bundle_identifier()
+                .ok_or_else(|| Error::Other("Signed bundle has no bundle identifier".to_string()))?;
+            let profile_path = signed_bundle.bundle_dir().join("embedded.mobileprovision");
+            let profile = MobileProvision::load_with_path(profile_path)?;
+            let final_entitlements = macho.entitlements().clone().ok_or_else(|| {
+                Error::Core(plume_core::Error::ProvisioningProfileInvalid(
+                    "signed executable has no entitlements".to_string(),
+                ))
+            })?;
+            profile.validate_final_entitlements(
+                platform,
+                &bundle_id,
+                device_udid,
+                certificate_der,
+                &final_entitlements,
+            )?;
+        }
+
+        Ok(())
+    }
+
     pub async fn sign_bundle(&self, bundle: &Bundle) -> Result<(), Error> {
+        self.sign_bundle_for_device(bundle, DeveloperPlatform::Ios, None)
+            .await
+    }
+
+    pub async fn sign_bundle_for_device(
+        &self,
+        bundle: &Bundle,
+        platform: DeveloperPlatform,
+        device_udid: Option<&str>,
+    ) -> Result<(), Error> {
+        self.validate_provisioning_files(bundle, platform, device_udid)?;
+        self.sign_bundle_unchecked(bundle, platform, device_udid).await
+    }
+
+    pub fn validate_provisioning_files(
+        &self,
+        bundle: &Bundle,
+        platform: DeveloperPlatform,
+        device_udid: Option<&str>,
+    ) -> Result<(), Error> {
+        if self.options.mode != SignerMode::Pem {
+            return Ok(());
+        }
+
+        let certificate_der = self
+            .certificate
+            .as_ref()
+            .and_then(CertificateIdentity::certificate_der);
+        let bundles = bundle
+            .collect_bundles_sorted()?
+            .into_iter()
+            .filter(|candidate| candidate.bundle_type().should_have_entitlements())
+            .collect::<Vec<_>>();
+
+        if bundles.is_empty() {
+            return Err(Error::Core(
+                plume_core::Error::ProvisioningProfileInvalid(
+                    "no signable app or extension bundles were found".to_string(),
+                ),
+            ));
+        }
+        if self.provisioning_files.is_empty() {
+            return Err(Error::Core(
+                plume_core::Error::ProvisioningProfileInvalid(
+                    "no provisioning profiles are available".to_string(),
+                ),
+            ));
+        }
+
+        for signed_bundle in bundles {
+            let bundle_id = signed_bundle
+                .get_bundle_identifier()
+                .ok_or_else(|| Error::Other("Signable bundle has no bundle identifier".into()))?;
+            let executable_name = signed_bundle
+                .get_executable()
+                .ok_or_else(|| Error::Other("Signable bundle has no executable".into()))?;
+            let binary_path = signed_bundle.bundle_dir().join(executable_name);
+            let macho = plume_core::MachO::new(&binary_path)?;
+            let mut last_error = None;
+
+            let matching_profile = self.provisioning_files.iter().find(|profile| {
+                match profile.validate_for(
+                    platform,
+                    &bundle_id,
+                    device_udid,
+                    certificate_der,
+                    macho.entitlements().as_ref(),
+                ) {
+                    Ok(()) => true,
+                    Err(error) => {
+                        last_error = Some(error);
+                        false
+                    }
+                }
+            });
+
+            let Some(matching_profile) = matching_profile else {
+                let error = last_error.unwrap_or_else(|| {
+                    plume_core::Error::ProvisioningProfileInvalid(format!(
+                        "no profile grants {bundle_id}"
+                    ))
+                });
+                return Err(Error::Core(error));
+            };
+
+            let mut effective_profile = matching_profile.clone();
+            effective_profile.merge_entitlements(binary_path.clone(), &bundle_id)?;
+            let final_entitlements = if self.options.embedding.single_profile {
+                self.options
+                    .custom_entitlements
+                    .as_ref()
+                    .map(|path| {
+                        let value = Value::from_file(path)?;
+                        value.as_dictionary().cloned().ok_or_else(|| {
+                            Error::Other("Custom entitlements file is not a dictionary".to_string())
+                        })
+                    })
+                    .transpose()?
+                    .unwrap_or_else(|| effective_profile.entitlements().clone())
+            } else {
+                effective_profile.entitlements().clone()
+            };
+            effective_profile.validate_final_entitlements(
+                platform,
+                &bundle_id,
+                device_udid,
+                certificate_der,
+                &final_entitlements,
+            )?;
+            log::info!("ProfileValidated: true for {bundle_id} on {platform}");
+        }
+
+        Ok(())
+    }
+
+    async fn sign_bundle_unchecked(
+        &self,
+        bundle: &Bundle,
+        platform: DeveloperPlatform,
+        device_udid: Option<&str>,
+    ) -> Result<(), Error> {
         if self.options.mode == SignerMode::None {
             return Ok(());
         }
@@ -381,6 +638,8 @@ impl Signer {
                 &self.provisioning_files,
                 settings.clone(),
                 &entitlements_xml,
+                platform,
+                device_udid,
             )?;
         }
 
@@ -399,12 +658,23 @@ impl Signer {
         provisioning_files: &[MobileProvision],
         mut settings: SigningSettings<'_>,
         entitlements_xml: &String,
+        platform: DeveloperPlatform,
+        device_udid: Option<&str>,
     ) -> Result<(), Error> {
         if *bundle.bundle_type() == BundleType::Unknown {
             return Ok(());
         }
 
         let mut entitlements_xml = entitlements_xml.clone();
+        let bundle_id = bundle.get_bundle_identifier();
+        let binary_path = bundle
+            .get_executable()
+            .map(|executable| bundle.bundle_dir().join(executable));
+        let requested_entitlements = binary_path
+            .as_ref()
+            .map(plume_core::MachO::new)
+            .transpose()?
+            .and_then(|macho| macho.entitlements().clone());
 
         // Only Apps and AppExtensions should have entitlements from provisioning profiles
         // Dylibs, frameworks, and other components should be signed without entitlements
@@ -413,27 +683,26 @@ impl Signer {
             && bundle.bundle_type().should_have_entitlements()
             && !provisioning_files.is_empty()
         {
-            let mut matched_prov = None;
-
-            for prov in provisioning_files {
-                if let (Some(bundle_id), Some(team_id)) =
-                    (bundle.get_bundle_identifier(), prov.bundle_id())
-                {
-                    if team_id == bundle_id {
-                        matched_prov = Some(prov);
-                        break;
-                    }
-                }
-            }
+            let matched_prov = bundle_id.as_deref().and_then(|bundle_id| {
+                provisioning_files.iter().find(|prov| {
+                    prov.validate_for(
+                        platform,
+                        bundle_id,
+                        device_udid,
+                        self.certificate
+                            .as_ref()
+                            .and_then(CertificateIdentity::certificate_der),
+                        requested_entitlements.as_ref(),
+                    )
+                    .is_ok()
+                })
+            });
 
             if let Some(prov) = matched_prov.or_else(|| provisioning_files.first()) {
                 let mut prov = prov.clone();
 
-                if let Some(bundle_executable) = bundle.get_executable() {
-                    if let Some(bundle_id) = bundle.get_bundle_identifier() {
-                        let binary_path = bundle.bundle_dir().join(bundle_executable);
-                        prov.merge_entitlements(binary_path, &bundle_id).ok();
-                    }
+                if let (Some(binary_path), Some(bundle_id)) = (&binary_path, &bundle_id) {
+                    prov.merge_entitlements(binary_path.clone(), bundle_id)?;
                 }
 
                 std::fs::write(
@@ -441,9 +710,8 @@ impl Signer {
                     &prov.data,
                 )?;
 
-                if let Ok(ent_xml) = prov.entitlements_as_bytes() {
-                    entitlements_xml = String::from_utf8_lossy(&ent_xml).to_string();
-                }
+                let ent_xml = prov.entitlements_as_bytes()?;
+                entitlements_xml = String::from_utf8_lossy(&ent_xml).to_string();
             }
         }
 

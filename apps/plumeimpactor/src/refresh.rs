@@ -5,7 +5,8 @@ use std::time::Duration;
 
 use chrono::Utc;
 use plume_core::{
-    AnisetteConfiguration, CertificateIdentity, MobileProvision, developer::DeveloperSession,
+    AnisetteConfiguration, CertificateIdentity, MobileProvision,
+    developer::{DeveloperPlatform, DeveloperSession},
 };
 use plume_store::{AccountStore, RefreshDevice};
 use plume_utils::{Bundle, Device, Signer, SignerMode, SignerOptions};
@@ -261,11 +262,23 @@ impl RefreshDaemon {
         session: &DeveloperSession,
         team_id: &str,
     ) -> Result<(), String> {
+        if !device.is_mac && !plume_utils::is_valid_device_udid(&device.udid) {
+            return Err("Device UDID is unknown; cannot register it with Apple".to_string());
+        }
+
+        let platform = if device.is_tvos() {
+            DeveloperPlatform::Tvos
+        } else {
+            DeveloperPlatform::Ios
+        };
+
         let team_id_string = team_id.to_string();
-        session
-            .qh_ensure_device(&team_id_string, &device.name, &device.udid)
-            .await
-            .map_err(|e| format!("Failed to ensure device: {}", e))?;
+        if !device.is_mac {
+            session
+                .qh_ensure_device(&team_id_string, &device.name, &device.udid, platform)
+                .await
+                .map_err(|e| format!("Failed to ensure device: {}", e))?;
+        }
 
         let bundle =
             Bundle::new(app.path.clone()).map_err(|e| format!("Failed to create bundle: {}", e))?;
@@ -291,14 +304,33 @@ impl RefreshDaemon {
         let mut signer = Signer::new(Some(signing_identity), options);
 
         signer
-            .register_bundle(&bundle, session, &team_id.to_string(), true)
+            .register_bundle_for_device(
+                &bundle,
+                session,
+                &team_id.to_string(),
+                true,
+                platform,
+                (!device.is_mac).then_some(device.udid.as_str()),
+            )
             .await
             .map_err(|e| format!("Failed to register bundle: {}", e))?;
 
         signer
-            .sign_bundle(&bundle)
+            .sign_bundle_for_device(
+                &bundle,
+                platform,
+                (!device.is_mac).then_some(device.udid.as_str()),
+            )
             .await
             .map_err(|e| format!("Failed to sign bundle: {}", e))?;
+
+        signer
+            .validate_signed_bundle(
+                &bundle,
+                platform,
+                (!device.is_mac).then_some(device.udid.as_str()),
+            )
+            .map_err(|e| format!("Failed to validate signed bundle: {}", e))?;
 
         if !device.is_mac {
             device
@@ -329,10 +361,34 @@ impl RefreshDaemon {
             ..Default::default()
         };
 
-        let mut signer = Signer::new(None, options);
+        let mut on_certificate_reset = crate::certificate_reset::confirm;
+        let signing_identity = CertificateIdentity::new_with_session(
+            session,
+            get_data_path(),
+            None,
+            &team_id.to_string(),
+            false,
+            Some(&mut on_certificate_reset),
+        )
+        .await
+        .map_err(|e| format!("Failed to create signing identity: {}", e))?;
+        let mut signer = Signer::new(Some(signing_identity), options);
+
+        let platform = if device.is_tvos() {
+            DeveloperPlatform::Tvos
+        } else {
+            DeveloperPlatform::Ios
+        };
 
         signer
-            .register_bundle(&bundle, session, &team_id.to_string(), true)
+            .register_bundle_for_device(
+                &bundle,
+                session,
+                &team_id.to_string(),
+                true,
+                platform,
+                Some(&device.udid),
+            )
             .await
             .map_err(|e| format!("Failed to register bundle: {}", e))?;
 

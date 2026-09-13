@@ -1,7 +1,9 @@
+mod platform;
 pub mod qh;
 mod session;
 pub mod v1;
 
+pub use platform::DeveloperPlatform;
 pub use session::{DeveloperSession, RequestType};
 
 #[macro_export]

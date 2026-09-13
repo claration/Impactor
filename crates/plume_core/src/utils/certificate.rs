@@ -32,6 +32,12 @@ pub struct CertificateIdentity {
 }
 
 impl CertificateIdentity {
+    pub fn certificate_der(&self) -> Option<&[u8]> {
+        self.cert
+            .as_ref()
+            .map(CapturedX509Certificate::constructed_data)
+    }
+
     // Use for cli context or if you actually store pems? why would you do that though
     pub async fn new_with_paths(paths: Option<Vec<PathBuf>>) -> Result<Self, Error> {
         let mut cert = Self {
