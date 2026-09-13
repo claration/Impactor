@@ -199,7 +199,7 @@ pub async fn execute(args: SignArgs) -> Result<()> {
 
     if let Some(pkg) = package {
         if let Some(output_path) = args.output {
-            let archived_path = pkg.get_archive_based_on_path(&args.package.clone())?;
+            let archived_path = pkg.get_archive_based_on_path(&bundle.bundle_dir())?;
             tokio::fs::copy(&archived_path, &output_path).await?;
             log::info!("Saved signed package to: {}", output_path.display());
             if std::env::var("PLUME_DELETE_AFTER_FINISHED").is_err() {
