@@ -6,7 +6,7 @@ use tokio::fs;
 
 use plume_core::{
     CertificateIdentity, MobileProvision, SettingsScope, SigningSettings, UnifiedSigner,
-    developer::DeveloperSession,
+    developer::{DeveloperPlatform, DeveloperSession},
 };
 
 use crate::{Bundle, BundleType, Error, PlistInfoTrait, SignerApp, SignerMode, SignerOptions};
@@ -228,6 +228,7 @@ impl Signer {
         session: &DeveloperSession,
         team_id: &String,
         is_refresh: bool,
+        platform: DeveloperPlatform,
     ) -> Result<(), Error> {
         if self.options.mode != SignerMode::Pem {
             return Ok(());
@@ -276,10 +277,12 @@ impl Signer {
 
                 let name = sub_bundle.get_bundle_name().unwrap_or_else(|| id.clone());
 
-                session.qh_ensure_app_id(&team_id, &name, &id).await?;
+                session
+                    .qh_ensure_app_id(&team_id, &name, &id, platform)
+                    .await?;
 
                 let app_id_id = session
-                    .qh_get_app_id(&team_id, &id)
+                    .qh_get_app_id(&team_id, &id, platform)
                     .await?
                     .ok_or_else(|| Error::Other("Failed to get ensured app ID.".into()))?;
 
@@ -337,7 +340,7 @@ impl Signer {
                 }
 
                 let profiles = session
-                    .qh_get_profile(&team_id, &app_id_id.app_id_id)
+                    .qh_get_profile(&team_id, &app_id_id.app_id_id, platform)
                     .await?;
                 let profile_data = profiles.provisioning_profile.encoded_profile;
 
