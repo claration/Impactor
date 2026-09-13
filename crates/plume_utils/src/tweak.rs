@@ -302,7 +302,6 @@ impl Tweak {
 
         let mut macho = MachO::new(&executable_path)?;
         macho.add_dylib(&inject_path)?;
-        macho.write_changes()?;
 
         Ok(())
     }
@@ -313,7 +312,6 @@ impl Tweak {
                 "/Library/Frameworks/CydiaSubstrate.framework/CydiaSubstrate",
                 "@rpath/CydiaSubstrate.framework/CydiaSubstrate",
             );
-            let _ = macho.write_changes();
         }
     }
 }

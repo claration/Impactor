@@ -16,29 +16,26 @@ use crate::Error;
 
 /// Represents a Mach-O file and its entitlements.
 pub struct MachO {
-    #[allow(dead_code)]
-    macho_file: MachFile<'static>,
+    data: Vec<u8>,
     path: std::path::PathBuf,
     entitlements: Option<Dictionary>,
 }
 
 impl MachO {
     pub fn new<P: AsRef<Path>>(path: P) -> Result<Self, Error> {
-        let macho_data = fs::read(&path)?;
-        // Leak the data for 'static lifetime required by MachFile.
-        let macho_data = Box::leak(macho_data.into_boxed_slice());
-        let macho_file = MachFile::parse(macho_data)?; // macho_file.data is the full file data
+        let data = fs::read(&path)?;
+        let macho_file = MachFile::parse(&data)?;
         let entitlements = Self::extract_entitlements(&macho_file)?;
 
         Ok(MachO {
-            macho_file,
+            data,
             path: path.as_ref().to_path_buf(),
             entitlements,
         })
     }
 
-    pub fn macho_file(&self) -> &MachFile<'_> {
-        &self.macho_file
+    pub fn macho_file(&self) -> MachFile<'_> {
+        MachFile::parse(&self.data).expect("MachO struct should contain valid data")
     }
 
     pub fn entitlements(&self) -> &Option<Dictionary> {
@@ -60,53 +57,35 @@ impl MachO {
             })
     }
 
-    // TODO: why is this here again
-    pub fn write_changes(&self) -> Result<(), Error> {
+    fn modify_binaries<F>(&mut self, mut f: F) -> Result<(), Error>
+    where
+        F: FnMut(&MachOBinary<'_>) -> Result<Vec<u8>, Error>,
+    {
+        let macho_file = self.macho_file();
         let mut builder = UniversalBinaryBuilder::default();
-        for binary in self.macho_file.iter_macho() {
-            let _ = builder.add_binary(binary.data);
+        for binary in macho_file.iter_macho() {
+            builder.add_binary(&f(binary)?)?;
         }
-
-        let writer = &mut fs::File::create(self.path.clone()).map_err(Error::from)?;
-        builder.write(writer)?;
-
+        self.data.clear();
+        builder.write(&mut self.data)?;
+        fs::write(&self.path, &self.data)?;
         Ok(())
     }
 
     pub fn add_dylib(&mut self, path: &str) -> Result<(), Error> {
-        let machos = self.macho_file.iter_macho_mut();
-        for macho in machos {
-            macho.add_dylib_load_path(path)?;
-        }
-        self.write_changes()?;
-        Ok(())
+        self.modify_binaries(|macho| macho.add_dylib_load_path(path))
     }
 
     pub fn replace_dylib(&mut self, old_path: &str, new_path: &str) -> Result<(), Error> {
-        let machos = self.macho_file.iter_macho_mut();
-        for macho in machos {
-            macho.replace_dylib_load_path(old_path, new_path)?;
-        }
-        self.write_changes()?;
-        Ok(())
+        self.modify_binaries(|macho| macho.replace_dylib_load_path(old_path, new_path))
     }
 
     pub fn remove_dylib(&mut self, path: &str) -> Result<(), Error> {
-        let machos = self.macho_file.iter_macho_mut();
-        for macho in machos {
-            macho.remove_dylib_load_path(path)?;
-        }
-        self.write_changes()?;
-        Ok(())
+        self.modify_binaries(|macho| macho.remove_dylib_load_path(path))
     }
 
     pub fn replace_sdk_version(&mut self, new_version: &str) -> Result<(), Error> {
-        let machos = self.macho_file.iter_macho_mut();
-        for macho in machos {
-            macho.replace_sdk_version(new_version)?;
-        }
-        self.write_changes()?;
-        Ok(())
+        self.modify_binaries(|macho| macho.replace_sdk_version(new_version))
     }
 }
 
@@ -114,10 +93,10 @@ impl MachO {
 pub trait MachOExt {
     fn embedded_entitlements(&self) -> Result<Option<Dictionary>, Error>;
     fn dylib_load_paths(&self) -> Result<Vec<String>, Error>;
-    fn add_dylib_load_path(&mut self, path: &str) -> Result<(), Error>;
-    fn remove_dylib_load_path(&mut self, path: &str) -> Result<(), Error>;
-    fn replace_dylib_load_path(&mut self, old_path: &str, new_path: &str) -> Result<(), Error>;
-    fn replace_sdk_version(&mut self, new_version: &str) -> Result<(), Error>;
+    fn add_dylib_load_path(&self, path: &str) -> Result<Vec<u8>, Error>;
+    fn remove_dylib_load_path(&self, path: &str) -> Result<Vec<u8>, Error>;
+    fn replace_dylib_load_path(&self, old_path: &str, new_path: &str) -> Result<Vec<u8>, Error>;
+    fn replace_sdk_version(&self, new_version: &str) -> Result<Vec<u8>, Error>;
 }
 
 // theres multiple binaries in MachFile, being Vec<MachOBinary>
@@ -164,7 +143,7 @@ impl<'a> MachOExt for MachOBinary<'a> {
     }
 
     // these require rewriting the Mach-O
-    fn add_dylib_load_path(&mut self, path: &str) -> Result<(), Error> {
+    fn add_dylib_load_path(&self, path: &str) -> Result<Vec<u8>, Error> {
         let macho = &self.macho;
 
         let read_u32_le = |data: &[u8], offset: usize| -> u32 {
@@ -201,7 +180,7 @@ impl<'a> MachOExt for MachOBinary<'a> {
 
         if dylib_exists {
             log::warn!("Dylib already exists in binary: {}", path);
-            return Ok(());
+            return Ok(data);
         }
 
         let header_size = if is_64 { 32 } else { 28 };
@@ -279,12 +258,10 @@ impl<'a> MachOExt for MachOBinary<'a> {
             .copy_from_slice(&new_sizeofcmds.to_le_bytes());
         data[ncmds_offset..ncmds_offset + 4].copy_from_slice(&new_ncmds.to_le_bytes());
 
-        self.data = Box::leak(data.into_boxed_slice());
-
-        Ok(())
+        Ok(data)
     }
 
-    fn remove_dylib_load_path(&mut self, path: &str) -> Result<(), Error> {
+    fn remove_dylib_load_path(&self, path: &str) -> Result<Vec<u8>, Error> {
         let macho = &self.macho;
         let mut data = self.data.to_vec();
 
@@ -320,7 +297,7 @@ impl<'a> MachOExt for MachOBinary<'a> {
 
         if replacements.is_empty() {
             log::warn!("No matching dylib load commands found for path: {}", path);
-            return Ok(());
+            return Ok(data);
         }
 
         let current_sizeofcmds = read_u32_le(&self.data, 20);
@@ -339,12 +316,10 @@ impl<'a> MachOExt for MachOBinary<'a> {
         data[16..20].copy_from_slice(&new_ncmds.to_le_bytes());
         data.truncate(20 + new_sizeofcmds as usize);
 
-        self.data = Box::leak(data.into_boxed_slice());
-
-        Ok(())
+        Ok(data)
     }
 
-    fn replace_dylib_load_path(&mut self, old_path: &str, new_path: &str) -> Result<(), Error> {
+    fn replace_dylib_load_path(&self, old_path: &str, new_path: &str) -> Result<Vec<u8>, Error> {
         let macho = &self.macho;
         let mut data = self.data.to_vec();
 
@@ -403,7 +378,7 @@ impl<'a> MachOExt for MachOBinary<'a> {
                 "No matching dylib load commands found for path: {}",
                 old_path
             );
-            return Ok(());
+            return Ok(data);
         }
 
         for (arch_offset, cmd_offset, cmdsize) in &replacements {
@@ -433,12 +408,10 @@ impl<'a> MachOExt for MachOBinary<'a> {
             // Null terminator is already written by the zeroing above, padding bytes are also zeros
         }
 
-        self.data = Box::leak(data.into_boxed_slice());
-
-        Ok(())
+        Ok(data)
     }
 
-    fn replace_sdk_version(&mut self, new_version: &str) -> Result<(), Error> {
+    fn replace_sdk_version(&self, new_version: &str) -> Result<Vec<u8>, Error> {
         let macho = &self.macho;
         let mut data = self.data.to_vec();
 
@@ -464,9 +437,7 @@ impl<'a> MachOExt for MachOBinary<'a> {
             }
         }
 
-        self.data = Box::leak(data.into_boxed_slice());
-
-        Ok(())
+        Ok(data)
     }
 }
 
