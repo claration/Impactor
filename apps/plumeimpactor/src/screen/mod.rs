@@ -815,6 +815,7 @@ impl Impactor {
             }
             None
         });
+        let keyboard_subscription = iced::event::listen_with(Self::keyboard_event);
 
         Subscription::batch(vec![
             device_subscription,
@@ -825,7 +826,34 @@ impl Impactor {
             certificate_reset_subscription,
             relaunch_subscription,
             close_subscription,
+            keyboard_subscription,
         ])
+    }
+
+    fn keyboard_event(
+        event: iced::Event,
+        status: iced::event::Status,
+        window_id: window::Id,
+    ) -> Option<Message> {
+        let iced::Event::Keyboard(iced::keyboard::Event::KeyPressed {
+            key: iced::keyboard::Key::Named(iced::keyboard::key::Named::Tab),
+            modifiers,
+            repeat,
+            ..
+        }) = event
+        else {
+            return None;
+        };
+
+        (status == iced::event::Status::Ignored
+            && !repeat
+            && modifiers
+                .difference(iced::keyboard::Modifiers::SHIFT)
+                .is_empty())
+        .then_some(Message::LoginWindowMessage(
+            window_id,
+            login_window::Message::FocusTraversal(modifiers.shift()),
+        ))
     }
 
     pub fn view(&self, window_id: window::Id) -> Element<'_, Message> {

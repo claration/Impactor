@@ -1,3 +1,4 @@
+use iced::advanced::widget::{self, operation};
 use iced::futures::SinkExt;
 use iced::widget::{button, column, container, row, text, text_input};
 use iced::{Alignment, Element, Fill, Task, window};
@@ -20,6 +21,7 @@ pub enum Message {
     TwoFactorCodeChanged(String),
     TwoFactorSubmit,
     TwoFactorCancel,
+    FocusTraversal(bool),
     SendCodeViaSms(u32),
     RequestTwoFactor {
         sms: bool,
@@ -39,6 +41,7 @@ pub struct LoginWindow {
     two_factor_is_sms: bool,
     trusted_phones: Vec<(u32, String)>,
     two_factor_tx: Option<std_mpsc::Sender<Result<TwoFactorAction, String>>>,
+    form_id: widget::Id,
 }
 
 impl LoginWindow {
@@ -50,6 +53,13 @@ impl LoginWindow {
             decorations: true,
             ..Default::default()
         });
+
+        let form_id = widget::Id::from(format!("login-window-{id}-form"));
+        let initial_focus_id = form_id.clone();
+
+        let task = task
+            .then(move |_| focus(initial_focus_id.clone(), false))
+            .discard();
 
         (
             Self {
@@ -64,8 +74,9 @@ impl LoginWindow {
                 two_factor_is_sms: false,
                 trusted_phones: Vec::new(),
                 two_factor_tx: None,
+                form_id,
             },
-            task.discard(),
+            task,
         )
     }
 
@@ -110,7 +121,7 @@ impl LoginWindow {
                 self.two_factor_code.clear();
                 self.login_error = None;
                 self.two_factor_error = None;
-                Task::none()
+                focus(self.form_id.clone(), false).discard()
             }
             Message::LoginCancel => {
                 if let Some(id) = self.window_id {
@@ -156,6 +167,7 @@ impl LoginWindow {
                 self.two_factor_error = None;
                 Task::none()
             }
+            Message::FocusTraversal(backwards) => focus(self.form_id.clone(), backwards).discard(),
             Message::TwoFactorSubmit => {
                 let code = self.two_factor_code.trim().to_string();
                 if code.is_empty() {
@@ -251,7 +263,10 @@ impl LoginWindow {
         content = content.push(container(text("")).width(Fill));
         content = content.push(buttons);
 
-        container(content).padding(appearance::THEME_PADDING).into()
+        container(content)
+            .id(self.form_id.clone())
+            .padding(appearance::THEME_PADDING)
+            .into()
     }
 
     fn view_two_factor(&self) -> Element<'_, Message> {
@@ -325,7 +340,10 @@ impl LoginWindow {
         .spacing(appearance::THEME_PADDING);
 
         content = content.push(buttons);
-        container(content).padding(20).into()
+        container(content)
+            .id(self.form_id.clone())
+            .padding(20)
+            .into()
     }
 
     fn perform_login(
@@ -387,5 +405,64 @@ impl LoginWindow {
                 }
             },
         )
+    }
+}
+
+fn focus(form_id: widget::Id, backwards: bool) -> Task<()> {
+    widget::operate(operation::scope(
+        form_id,
+        operation::then(
+            operation::focusable::count(),
+            if backwards {
+                cycle_backwards
+            } else {
+                cycle_forwards
+            },
+        ),
+    ))
+}
+
+struct CycleFocus {
+    target: usize,
+    index: usize,
+}
+
+impl CycleFocus {
+    fn new(target: usize) -> Self {
+        Self { target, index: 0 }
+    }
+}
+
+fn cycle_forwards(count: operation::focusable::Count) -> CycleFocus {
+    CycleFocus::new(count.focused.map_or(0, |index| (index + 1) % count.total))
+}
+
+fn cycle_backwards(count: operation::focusable::Count) -> CycleFocus {
+    CycleFocus::new(
+        count
+            .focused
+            .and_then(|index| index.checked_sub(1))
+            .unwrap_or(count.total.saturating_sub(1)),
+    )
+}
+
+impl widget::Operation for CycleFocus {
+    fn traverse(&mut self, operate: &mut dyn FnMut(&mut dyn widget::Operation)) {
+        operate(self);
+    }
+
+    fn focusable(
+        &mut self,
+        _id: Option<&widget::Id>,
+        _bounds: iced::Rectangle,
+        state: &mut dyn operation::Focusable,
+    ) {
+        if self.target == self.index {
+            state.focus();
+        } else {
+            state.unfocus();
+        }
+
+        self.index += 1;
     }
 }
