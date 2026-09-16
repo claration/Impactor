@@ -539,6 +539,8 @@ pub(crate) async fn run_installation(
                             apps: Vec::new(),
                             is_mac: dev.is_mac,
                         });
+                    
+                    refresh_device.account = account.email().clone();
 
                     if let Some(existing_app) = refresh_device
                         .apps
