@@ -1,7 +1,8 @@
 use super::{Bundle, PlistInfoTrait};
 use crate::{Error, SignerApp, SignerOptions, cgbi};
+use plume_core::MobileProvision;
 use plist::Dictionary;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::{env, fs, io::Read};
 use uuid::Uuid;
 use zip::ZipArchive;
@@ -176,12 +177,67 @@ impl Package {
         Ok(Bundle::new(app_dir)?)
     }
 
-    pub fn get_archive_based_on_path(&self, path: &PathBuf) -> Result<PathBuf, Error> {
-        if path.is_dir() {
-            self.clone().archive_package_bundle()
-        } else {
-            Ok(self.package_file.clone())
+    pub fn get_archive_based_on_path(&self, _path: &PathBuf) -> Result<PathBuf, Error> {
+        self.clone().archive_package_bundle()
+    }
+
+    pub fn validate_archive(path: &Path, require_profile: bool) -> Result<(), Error> {
+        let mut archive = ZipArchive::new(fs::File::open(path)?)?;
+        let app_prefix = (0..archive.len())
+            .filter_map(|index| archive.by_index(index).ok().map(|entry| entry.name().to_string()))
+            .find(|entry| {
+                entry.starts_with("Payload/")
+                    && entry.ends_with("/Info.plist")
+                    && entry.matches('/').count() == 2
+            })
+            .map(|entry| entry.trim_end_matches("/Info.plist").to_string())
+            .ok_or_else(|| Error::Other("Produced IPA has no application bundle".to_string()))?;
+
+        let signature = format!("{app_prefix}/_CodeSignature/CodeResources");
+        let mut signature_data = Vec::new();
+        let signature_valid = archive
+            .by_name(&signature)
+            .map_err(|error| Error::Other(format!("Unable to read produced IPA signature: {error}")))
+            .and_then(|mut entry| {
+                entry
+                    .read_to_end(&mut signature_data)
+                    .map_err(|error| Error::Other(format!("Unable to read produced IPA signature: {error}")))
+            })
+            .is_ok()
+            && !signature_data.is_empty();
+        if !signature_valid {
+            return Err(Error::Other(
+                "Produced IPA has no application code signature".to_string(),
+            ));
         }
+
+        if require_profile {
+            let profile = format!("{app_prefix}/embedded.mobileprovision");
+            let mut profile_data = Vec::new();
+            let profile_valid = archive
+                .by_name(&profile)
+                .map_err(|error| Error::Other(format!("Unable to read produced IPA profile: {error}")))
+                .and_then(|mut entry| {
+                    entry
+                        .read_to_end(&mut profile_data)
+                        .map_err(|error| Error::Other(format!("Unable to read produced IPA profile: {error}")))
+                })
+                .is_ok()
+                && !profile_data.is_empty();
+            if !profile_valid {
+                return Err(Error::Other(
+                    "Produced IPA has no embedded provisioning profile".to_string(),
+                ));
+            }
+            MobileProvision::load_with_bytes(profile_data)
+                .map_err(|error| {
+                    Error::Other(format!(
+                        "Produced IPA has an invalid provisioning profile: {error}"
+                    ))
+                })?;
+        }
+
+        Ok(())
     }
 
     fn archive_package_bundle(self) -> Result<PathBuf, Error> {
@@ -204,8 +260,10 @@ impl Package {
                 let name = entry_path
                     .strip_prefix(prefix)
                     .map_err(|_| Error::PackageInfoPlistMissing)?
-                    .to_string_lossy()
-                    .to_string();
+                    .components()
+                    .map(|component| component.as_os_str().to_string_lossy())
+                    .collect::<Vec<_>>()
+                    .join("/");
 
                 if entry_path.is_file() {
                     zip.start_file(&name, options.clone())?;

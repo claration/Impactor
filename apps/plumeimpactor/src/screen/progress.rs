@@ -8,12 +8,37 @@ use rust_i18n::t;
 
 use crate::appearance;
 
-type ProgressReceiver = Arc<Mutex<mpsc::Receiver<(String, i32)>>>;
+type ProgressReceiver = Arc<Mutex<mpsc::Receiver<ProgressUpdate>>>;
+
+#[derive(Debug, Clone)]
+pub struct ProgressUpdate {
+    pub status: String,
+    pub progress: i32,
+    pub determinate: bool,
+}
+
+impl ProgressUpdate {
+    pub fn new(status: String, progress: i32) -> Self {
+        Self {
+            status,
+            progress,
+            determinate: true,
+        }
+    }
+
+    pub fn indeterminate(status: String, progress: i32) -> Self {
+        Self {
+            status,
+            progress,
+            determinate: false,
+        }
+    }
+}
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum Message {
-    InstallationProgress(String, i32),
+    InstallationProgress(ProgressUpdate),
     InstallationError(String),
     InstallationFinished,
     Back,
@@ -23,6 +48,7 @@ pub enum Message {
 pub struct ProgressScreen {
     pub status: String,
     pub progress: i32,
+    pub determinate: bool,
     pub is_installing: bool,
     pub progress_rx: Option<ProgressReceiver>,
 }
@@ -32,6 +58,7 @@ impl ProgressScreen {
         Self {
             status: "Idle.".to_string(),
             progress: 0,
+            determinate: true,
             is_installing: false,
             progress_rx: None,
         }
@@ -40,15 +67,22 @@ impl ProgressScreen {
     pub fn start_installation(&mut self, rx: ProgressReceiver) {
         self.is_installing = true;
         self.progress = 0;
+        self.determinate = true;
         self.status = "Idle.".to_string();
         self.progress_rx = Some(rx);
     }
 
     pub fn update(&mut self, message: Message) -> Task<Message> {
         match message {
-            Message::InstallationProgress(status, progress) => {
+            Message::InstallationProgress(update) => {
+                let ProgressUpdate {
+                    status,
+                    progress,
+                    determinate,
+                } = update;
                 self.status = status.clone();
                 self.progress = progress;
+                self.determinate = determinate;
 
                 if progress == -1 {
                     self.progress_rx = None;
@@ -102,9 +136,15 @@ impl ProgressScreen {
     pub fn view(&self) -> Element<'_, Message> {
         let progress_bar = iced::widget::progress_bar(0.0..=100.0, self.progress as f32);
 
+        let status_text = if self.determinate {
+            format!("{}% - {}", self.progress, self.status)
+        } else {
+            self.status.clone()
+        };
+
         let screen_content = column![
             text(t!("progress_installing_application")).size(14),
-            text(format!("{}% – {}", self.progress, self.status)).size(14),
+            text(status_text).size(14),
             progress_bar,
             container(text("")).height(Fill),
         ]

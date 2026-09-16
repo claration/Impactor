@@ -4,6 +4,7 @@ use serde::Deserialize;
 use crate::Error;
 
 use super::{DeveloperSession, QHResponseMeta};
+use crate::developer::DeveloperPlatform;
 use crate::developer_endpoint;
 
 impl DeveloperSession {
@@ -11,12 +12,14 @@ impl DeveloperSession {
         &self,
         team_id: &String,
         app_id_id: &String,
+        platform: DeveloperPlatform,
     ) -> Result<ProfilesResponse, Error> {
         let endpoint = developer_endpoint!("/QH65B2/ios/downloadTeamProvisioningProfile.action");
 
         let mut body = Dictionary::new();
         body.insert("teamId".to_string(), Value::String(team_id.clone()));
         body.insert("appIdId".to_string(), Value::String(app_id_id.clone()));
+        platform.apply_to(&mut body);
 
         let response = self.qh_send_request(&endpoint, Some(body)).await?;
         let response_data: ProfilesResponse = plist::from_value(&Value::Dictionary(response))?;

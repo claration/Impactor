@@ -8,7 +8,7 @@ mod provision;
 pub use certificate::CertificateIdentity;
 #[cfg(feature = "tweaks")]
 pub use macho::{MachO, MachOExt};
-pub use provision::MobileProvision;
+pub use provision::{MobileProvision, is_valid_device_udid};
 
 pub const TEAM_ID_REGEX: &str = r"^[A-Z0-9]{10}\.";
 
