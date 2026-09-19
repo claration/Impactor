@@ -1,0 +1,369 @@
+```
+$ rcodesign help extract
+Print/extract various information from a Mach-O binary.
+
+Given the path to a Mach-O binary (including fat/universal binaries), this command will attempt to locate and format the requested data.
+
+Usage: rcodesign extract [OPTIONS] <COMMAND> <INPUT_PATH>
+
+Commands:
+  blobs                          Code directory blobs
+  cms-info                       Information about cryptographic message syntax signature
+  cms-pem                        PEM encoded cryptographic message syntax signature
+  cms-raw                        Binary cryptographic message syntax signature. Should be BER encoded ASN.1 data
+  cms                            ASN.1 decoded cryptographic message syntax data
+  code-directory                 Information from the main code directory data structure
+  code-directory-raw             Raw binary data composing the code directory data structure
+  code-directory-serialized      Reserialize the parsed code directory, parse it again, and then print it like `code-directory` would
+  code-directory-serialized-raw  Reserialize the parsed code directory and emit its binary
+  linkedit-info                  Information about the __LINKEDIT Mach-O segment
+  linkedit-segment-raw           Complete content of the __LINKEDIT Mach-O segment
+  macho-header                   Mach-O file header data
+  macho-load-commands            High-level information about Mach-O load commands
+  macho-load-commands-raw        Debug formatted Mach-O load command data structures
+  macho-segments                 Information about Mach-O segments
+  macho-target                   Mach-O targeting info
+  requirements                   Parsed code requirement statement/expression
+  requirements-raw               Raw binary data composing the requirements blob/slot
+  requirements-rust              Dump the internal Rust data structures representing the requirements expressions
+  requirements-serialized        Reserialize the code requirements blob, parse it again, and then print it like `requirements` would
+  requirements-serialized-raw    Like `requirements-serialized` except emit the binary data representation
+  signature-raw                  Raw binary data constituting the signature data embedded in the binary
+  superblob                      Show information about the SuperBlob record and high-level details of embedded Blob records
+  help                           Print this message or the help of the given subcommand(s)
+
+Options:
+  -C, --config-file <CONFIG_PATH>
+          Explicit configuration file to load.
+          
+          If provided, the default configuration files are not loaded, even if they exist.
+          
+          Can be specified multiple times. Files are loaded/merged in the order given.
+          
+          The special value `/dev/null` can be used to specify an empty/null config file. It can be used to short-circuit loading of default config files.
+
+      --universal-index <UNIVERSAL_INDEX>
+          Index of Mach-O binary to operate on within a universal/fat binary
+          
+          [default: 0]
+
+  -P, --profile <PROFILE>
+          Configuration profile to load.
+          
+          If not specified, the implicit "default" profile is loaded.
+
+  -v, --verbose...
+          Increase logging verbosity. Can be specified multiple times
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+```
+
+```
+$ rcodesign debug-create-macho --minimum-os-version 11.2.0 exe
+writing Mach-O to exe
+
+$ rcodesign sign exe
+signing exe in place
+signing exe as a Mach-O binary
+setting binary identifier to exe
+parsing Mach-O
+writing Mach-O to exe
+
+$ rcodesign extract blobs exe
+ParsedBlob {
+    blob_entry: BlobEntry {
+        index: 0,
+        slot: CodeDirectory (0),
+        offset: 36,
+        length: 316,
+        magic: CodeDirectory,
+    },
+    blob: CodeDirectory(
+        CodeDirectoryBlob {
+            version: 132096,
+            flags: CodeSignatureFlags(
+                ADHOC,
+            ),
+            code_limit: 16400,
+            digest_size: 32,
+            digest_type: Sha256,
+            platform: 0,
+            page_size: 4096,
+            spare2: 0,
+            scatter_offset: None,
+            spare3: Some(
+                0,
+            ),
+            code_limit_64: Some(
+                0,
+            ),
+            exec_seg_base: Some(
+                0,
+            ),
+            exec_seg_limit: Some(
+                16384,
+            ),
+            exec_seg_flags: Some(
+                ExecutableSegmentFlags(
+                    MAIN_BINARY,
+                ),
+            ),
+            runtime: None,
+            pre_encrypt_offset: None,
+            linkage_hash_type: None,
+            linkage_truncated: None,
+            spare4: None,
+            linkage_offset: None,
+            linkage_size: None,
+            ident: "exe",
+            team_name: None,
+            code_digests: [
+                4f3c762ac97e47d0e37922d5b276e7c751b66e37f4b410a0421e6d5aacf44415,
+                ad7facb2586fc6e966c004d7d1d16b024f5805ff7cb47c7a85dabd8b48892ca7,
+                ad7facb2586fc6e966c004d7d1d16b024f5805ff7cb47c7a85dabd8b48892ca7,
+                ad7facb2586fc6e966c004d7d1d16b024f5805ff7cb47c7a85dabd8b48892ca7,
+                374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb,
+            ],
+            special_digests: {
+                Info (1): 0000000000000000000000000000000000000000000000000000000000000000,
+                RequirementSet (2): 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986,
+            },
+        },
+    ),
+}
+ParsedBlob {
+    blob_entry: BlobEntry {
+        index: 1,
+        slot: RequirementSet (2),
+        offset: 352,
+        length: 12,
+        magic: RequirementSet,
+    },
+    blob: RequirementSet(
+        RequirementSetBlob {
+            requirements: {},
+        },
+    ),
+}
+ParsedBlob {
+    blob_entry: BlobEntry {
+        index: 2,
+        slot: CMS Signature (65536),
+        offset: 364,
+        length: 8,
+        magic: BlobWrapper,
+    },
+    blob: BlobWrapper(
+        ,
+    ),
+}
+
+$ rcodesign extract code-directory exe
+CodeDirectoryBlob {
+    version: 132096,
+    flags: CodeSignatureFlags(
+        ADHOC,
+    ),
+    code_limit: 16400,
+    digest_size: 32,
+    digest_type: Sha256,
+    platform: 0,
+    page_size: 4096,
+    spare2: 0,
+    scatter_offset: None,
+    spare3: Some(
+        0,
+    ),
+    code_limit_64: Some(
+        0,
+    ),
+    exec_seg_base: Some(
+        0,
+    ),
+    exec_seg_limit: Some(
+        16384,
+    ),
+    exec_seg_flags: Some(
+        ExecutableSegmentFlags(
+            MAIN_BINARY,
+        ),
+    ),
+    runtime: None,
+    pre_encrypt_offset: None,
+    linkage_hash_type: None,
+    linkage_truncated: None,
+    spare4: None,
+    linkage_offset: None,
+    linkage_size: None,
+    ident: "exe",
+    team_name: None,
+    code_digests: [
+        4f3c762ac97e47d0e37922d5b276e7c751b66e37f4b410a0421e6d5aacf44415,
+        ad7facb2586fc6e966c004d7d1d16b024f5805ff7cb47c7a85dabd8b48892ca7,
+        ad7facb2586fc6e966c004d7d1d16b024f5805ff7cb47c7a85dabd8b48892ca7,
+        ad7facb2586fc6e966c004d7d1d16b024f5805ff7cb47c7a85dabd8b48892ca7,
+        374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb,
+    ],
+    special_digests: {
+        Info (1): 0000000000000000000000000000000000000000000000000000000000000000,
+        RequirementSet (2): 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986,
+    },
+}
+
+$ rcodesign extract code-directory-serialized exe
+CodeDirectoryBlob {
+    version: 132096,
+    flags: CodeSignatureFlags(
+        ADHOC,
+    ),
+    code_limit: 16400,
+    digest_size: 32,
+    digest_type: Sha256,
+    platform: 0,
+    page_size: 4096,
+    spare2: 0,
+    scatter_offset: None,
+    spare3: Some(
+        0,
+    ),
+    code_limit_64: Some(
+        0,
+    ),
+    exec_seg_base: Some(
+        0,
+    ),
+    exec_seg_limit: Some(
+        16384,
+    ),
+    exec_seg_flags: Some(
+        ExecutableSegmentFlags(
+            MAIN_BINARY,
+        ),
+    ),
+    runtime: None,
+    pre_encrypt_offset: None,
+    linkage_hash_type: None,
+    linkage_truncated: None,
+    spare4: None,
+    linkage_offset: None,
+    linkage_size: None,
+    ident: "exe",
+    team_name: None,
+    code_digests: [
+        4f3c762ac97e47d0e37922d5b276e7c751b66e37f4b410a0421e6d5aacf44415,
+        ad7facb2586fc6e966c004d7d1d16b024f5805ff7cb47c7a85dabd8b48892ca7,
+        ad7facb2586fc6e966c004d7d1d16b024f5805ff7cb47c7a85dabd8b48892ca7,
+        ad7facb2586fc6e966c004d7d1d16b024f5805ff7cb47c7a85dabd8b48892ca7,
+        374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb,
+    ],
+    special_digests: {
+        Info (1): 0000000000000000000000000000000000000000000000000000000000000000,
+        RequirementSet (2): 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986,
+    },
+}
+
+$ rcodesign extract linkedit-info exe
+__LINKEDIT segment index: 4
+__LINKEDIT segment start offset: 16384
+__LINKEDIT segment end offset: 22544
+__LINKEDIT segment size: 6160
+__LINKEDIT signature global start offset: 16400
+__LINKEDIT signature global end offset: 22544
+__LINKEDIT signature local segment start offset: 16
+__LINKEDIT signature local segment end offset: 6160
+__LINKEDIT signature size: 6144
+
+$ rcodesign extract macho-load-commands exe
+load command count: 8
+LC_SEGMENT_64; offsets=0x20-0x68 (32-104); size=72
+LC_SEGMENT_64; offsets=0x68-0x150 (104-336); size=232
+LC_SEGMENT_64; offsets=0x150-0x1e8 (336-488); size=152
+LC_SEGMENT_64; offsets=0x1e8-0x280 (488-640); size=152
+LC_SEGMENT_64; offsets=0x280-0x2c8 (640-712); size=72
+LC_SYMTAB; offsets=0x2c8-0x2e0 (712-736); size=24
+LC_BUILD_VERSION; offsets=0x2e0-0x2f8 (736-760); size=24
+LC_CODE_SIGNATURE; offsets=0x2f8-0x308 (760-776); size=16
+
+$ rcodesign extract macho-segments exe
+segments count: 5
+segment #0; __PAGEZERO; offsets=0x0-0x0 (0-0); addresses=0x0-0x100000000; vm/file size 4294967296/0; section count 0
+segment #1; __TEXT; offsets=0x0-0x4000 (0-16384); addresses=0x100000000-0x100000000; vm/file size 0/16384; section count 2
+segment #1; section #0: __text; offsets=0x4000-0x4000 (16384-16384); addresses=0x100000000-0x100000000; size 0; align=16384; flags=0
+segment #1; section #1: __const; offsets=0x4000-0x4000 (16384-16384); addresses=0x100000000-0x100000000; size 0; align=16384; flags=0
+segment #2; __DATA_CONST; offsets=0x4000-0x4000 (16384-16384); addresses=0x100000000-0x100000000; vm/file size 0/0; section count 1
+segment #2; section #0: __const; offsets=0x4000-0x4000 (16384-16384); addresses=0x100000000-0x100000000; size 0; align=16384; flags=0
+segment #3; __DATA; offsets=0x4000-0x4000 (16384-16384); addresses=0x100000000-0x100000000; vm/file size 0/0; section count 1
+segment #3; section #0: __data; offsets=0x4000-0x4000 (16384-16384); addresses=0x100000000-0x100000000; size 0; align=16384; flags=0
+segment #4; __LINKEDIT; offsets=0x4000-0x5810 (16384-22544); addresses=0x100000000-0x100004000; vm/file size 16384/6160; section count 0
+
+$ rcodesign extract macho-target exe
+Platform: macOS
+Minimum OS: 11.2.0
+SDK: 11.2.0
+
+$ rcodesign extract requirements exe
+
+$ rcodesign extract requirements-rust exe
+
+$ rcodesign extract requirements-serialized exe
+RequirementSetBlob {
+    requirements: {},
+}
+
+$ rcodesign extract superblob exe
+file start offset: 16400
+file end offset: 22544
+__LINKEDIT start offset: 16
+__LINKEDIT end offset: 6160
+length: 372
+blob count: 3
+blobs:
+- index: 0
+  offsets: 0x24-0x15f (36-351)
+  length: 316
+  slot: CodeDirectory (0)
+  magic: CodeDirectory (0xfade0c02)
+  sha1: ee23bf4fb629c06fd2a4c052e64e6d82cba191d6
+  sha256: 504dc3f849477fdb537ed810992d02e008f5302d8cde77b0076bd6cbefb10de6
+  sha256-truncated: 504dc3f849477fdb537ed810992d02e008f5302d
+  sha384: 38564345445744b17a61213dda9fd116bd5e0f0943cd7d6994d5f1e0fcf0d1b28e4646245c75aa51d5e43cd9e1e8a8c9
+  sha512: ba96f00e6cc58310a76a99d51b5571e4beb9d73abc6678df02b942116d458f1be7d028eef670088aed2eeb1c1dcb055f6f8a51e587ac59bd7ad2cf0ef475673e
+  sha1-base64: 7iO/T7YpwG/SpMBS5k5tgsuhkdY=
+  sha256-base64: UE3D+ElHf9tTftgQmS0C4Aj1MC2M3newB2vWy++xDeY=
+  sha256-truncated-base64: UE3D+ElHf9tTftgQmS0C4Aj1MC0=
+  sha384-base64: OFZDRURXRLF6YSE92p/RFr1eDwlDzX1plNXx4Pzw0bKORkYkXHWqUdXkPNnh6KjJ
+  sha512-base64: upbwDmzFgxCnapnVG1Vx5L651zq8ZnjfArlCEW1Fjxvn0Cju9nAIiu0u6xwdywVfb4pR5YesWb160s8O9HVnPg==
+- index: 1
+  offsets: 0x160-0x16b (352-363)
+  length: 12
+  slot: RequirementSet (2)
+  magic: RequirementSet (0xfade0c01)
+  sha1: 3a75f6db058529148e14dd7ea1b4729cc09ec973
+  sha256: 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986
+  sha256-truncated: 987920904eab650e75788c054aa0b0524e6a80bf
+  sha384: df9b77e787dcf0f66952973f309be7ac0718558792e9e10984a26231048034d31cdd208d65fd38143a8d96aecd32084d
+  sha512: a2038f9fd1ebade88b0f261db83eaef30ecf7c9ebe7c9212c62a30ba534dbf59e6423e922edfbdba969848663377ac4f9130ee8f4510144b4fa411398e3ae97c
+  sha1-base64: OnX22wWFKRSOFN1+obRynMCeyXM=
+  sha256-base64: mHkgkE6rZQ51eIwFSqCwUk5qgL/HGqMt+NI3phdD+YY=
+  sha256-truncated-base64: mHkgkE6rZQ51eIwFSqCwUk5qgL8=
+  sha384-base64: 35t354fc8PZpUpc/MJvnrAcYVYeS6eEJhKJiMQSANNMc3SCNZf04FDqNlq7NMghN
+  sha512-base64: ogOPn9HrreiLDyYduD6u8w7PfJ6+fJISxiowulNNv1nmQj6SLt+9upaYSGYzd6xPkTDuj0UQFEtPpBE5jjrpfA==
+- index: 2
+  offsets: 0x16c-0x173 (364-371)
+  length: 8
+  slot: CMS Signature (65536)
+  magic: BlobWrapper (0xfade0b01)
+  sha1: 2a7254313aa41796079bb0e9d0f044345f69f98b
+  sha256: e6c83bc98a10348492c7d4d2378a54572ef29e1a5692ccd02b5e29f4b762d6a0
+  sha256-truncated: e6c83bc98a10348492c7d4d2378a54572ef29e1a
+  sha384: 01415351c4e0230fa499def0260fa6ac175625f2b06f9f45e607ff3fd513c60dfbeefd85327e777f7ab19c5512da9a82
+  sha512: 9968a4b379cdb74bfb92a9d24c90649e9252f8fe905b76927d0e435cc09deb6c370b63c83678e98d137589a62f5678657fb05d1f14328c4e4efd624f6192282a
+  sha1-base64: KnJUMTqkF5YHm7Dp0PBENF9p+Ys=
+  sha256-base64: 5sg7yYoQNISSx9TSN4pUVy7ynhpWkszQK14p9Ldi1qA=
+  sha256-truncated-base64: 5sg7yYoQNISSx9TSN4pUVy7ynho=
+  sha384-base64: AUFTUcTgIw+kmd7wJg+mrBdWJfKwb59F5gf/P9UTxg377v2FMn53f3qxnFUS2pqC
+  sha512-base64: mWiks3nNt0v7kqnSTJBknpJS+P6QW3aSfQ5DXMCd62w3C2PINnjpjRN1iaYvVnhlf7BdHxQyjE5O/WJPYZIoKg==
+
+```

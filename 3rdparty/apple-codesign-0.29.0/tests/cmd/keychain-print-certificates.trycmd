@@ -1,0 +1,34 @@
+```
+$ rcodesign help keychain-print-certificates
+Print information about certificates in the macOS keychain
+
+Usage: rcodesign[EXE] keychain-print-certificates [OPTIONS]
+
+Options:
+  -C, --config-file <CONFIG_PATH>
+          Explicit configuration file to load.
+          
+          If provided, the default configuration files are not loaded, even if they exist.
+          
+          Can be specified multiple times. Files are loaded/merged in the order given.
+          
+          The special value `/dev/null` can be used to specify an empty/null config file. It can be used to short-circuit loading of default config files.
+
+      --domain <DOMAIN>
+          Keychain domain to operate on
+          
+          [default: user]
+          [possible values: user, system, common, dynamic]
+
+  -P, --profile <PROFILE>
+          Configuration profile to load.
+          
+          If not specified, the implicit "default" profile is loaded.
+
+  -v, --verbose...
+          Increase logging verbosity. Can be specified multiple times
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+```

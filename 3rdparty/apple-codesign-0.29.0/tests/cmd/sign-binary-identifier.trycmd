@@ -1,0 +1,113 @@
+```
+$ rcodesign debug-create-macho exe
+assuming default minimum version 11.0.0
+writing Mach-O to exe
+
+$ rcodesign sign --binary-identifier my-binary exe exe.signed
+signing exe to exe.signed
+signing exe as a Mach-O binary
+parsing Mach-O
+writing Mach-O to exe.signed
+
+$ rcodesign print-signature-info exe.signed
+- path: exe.signed
+  file_size: 22544
+  file_sha256: 8ecbc87f8c751be9a6048b546f52eb817a34d1ac3839cc7763a14445a2068140
+  entity:
+    mach_o:
+      macho_linkedit_start_offset: 16384 / 0x4000
+      macho_signature_start_offset: 16400 / 0x4010
+      macho_signature_end_offset: 16778 / 0x418a
+      macho_linkedit_end_offset: 22544 / 0x5810
+      macho_end_offset: 22544 / 0x5810
+      linkedit_signature_start_offset: 16 / 0x10
+      linkedit_signature_end_offset: 394 / 0x18a
+      linkedit_bytes_after_signature: 5766 / 0x1686
+      signature:
+        superblob_length: 378 / 0x17a
+        blob_count: 3
+        blobs:
+        - slot: CodeDirectory (0)
+          magic: fade0c02
+          length: 322
+          sha1: c1f056da05543dc711b509c2d63e71ced1af1c9d
+          sha256: 8b710dbe31e6e2eecf6d8eaa6451a8f6afdf6a9cb0baa2f88cc0474ee5138889
+        - slot: RequirementSet (2)
+          magic: fade0c01
+          length: 12
+          sha1: 3a75f6db058529148e14dd7ea1b4729cc09ec973
+          sha256: 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986
+        - slot: CMS Signature (65536)
+          magic: fade0b01
+          length: 8
+          sha1: 2a7254313aa41796079bb0e9d0f044345f69f98b
+          sha256: e6c83bc98a10348492c7d4d2378a54572ef29e1a5692ccd02b5e29f4b762d6a0
+        code_directory:
+          version: '0x20400'
+          flags: CodeSignatureFlags(ADHOC)
+          identifier: my-binary
+          digest_type: sha256
+          platform: 0
+          signed_entity_size: 16400
+          executable_segment_flags: ExecutableSegmentFlags(MAIN_BINARY)
+          code_digests_count: 5
+          slot_digests:
+          - 'Info (1): 0000000000000000000000000000000000000000000000000000000000000000'
+          - 'RequirementSet (2): 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986'
+        cms: null
+
+$ rcodesign sign exe.signed exe.signed.2
+signing exe.signed to exe.signed.2
+signing exe.signed as a Mach-O binary
+setting binary identifier to exe
+parsing Mach-O
+writing Mach-O to exe.signed.2
+
+$ rcodesign print-signature-info exe.signed.2
+- path: exe.signed.2
+  file_size: 22544
+  file_sha256: 8ecbc87f8c751be9a6048b546f52eb817a34d1ac3839cc7763a14445a2068140
+  entity:
+    mach_o:
+      macho_linkedit_start_offset: 16384 / 0x4000
+      macho_signature_start_offset: 16400 / 0x4010
+      macho_signature_end_offset: 16778 / 0x418a
+      macho_linkedit_end_offset: 22544 / 0x5810
+      macho_end_offset: 22544 / 0x5810
+      linkedit_signature_start_offset: 16 / 0x10
+      linkedit_signature_end_offset: 394 / 0x18a
+      linkedit_bytes_after_signature: 5766 / 0x1686
+      signature:
+        superblob_length: 378 / 0x17a
+        blob_count: 3
+        blobs:
+        - slot: CodeDirectory (0)
+          magic: fade0c02
+          length: 322
+          sha1: c1f056da05543dc711b509c2d63e71ced1af1c9d
+          sha256: 8b710dbe31e6e2eecf6d8eaa6451a8f6afdf6a9cb0baa2f88cc0474ee5138889
+        - slot: RequirementSet (2)
+          magic: fade0c01
+          length: 12
+          sha1: 3a75f6db058529148e14dd7ea1b4729cc09ec973
+          sha256: 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986
+        - slot: CMS Signature (65536)
+          magic: fade0b01
+          length: 8
+          sha1: 2a7254313aa41796079bb0e9d0f044345f69f98b
+          sha256: e6c83bc98a10348492c7d4d2378a54572ef29e1a5692ccd02b5e29f4b762d6a0
+        code_directory:
+          version: '0x20400'
+          flags: CodeSignatureFlags(ADHOC)
+          identifier: my-binary
+          digest_type: sha256
+          platform: 0
+          signed_entity_size: 16400
+          executable_segment_flags: ExecutableSegmentFlags(MAIN_BINARY)
+          code_digests_count: 5
+          slot_digests:
+          - 'Info (1): 0000000000000000000000000000000000000000000000000000000000000000'
+          - 'RequirementSet (2): 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986'
+        cms: null
+
+```

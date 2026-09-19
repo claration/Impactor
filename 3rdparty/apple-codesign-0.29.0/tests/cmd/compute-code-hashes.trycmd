@@ -1,0 +1,48 @@
+```
+$ rcodesign help compute-code-hashes
+Compute code hashes for a binary
+
+Usage: rcodesign[EXE] compute-code-hashes [OPTIONS] <PATH>
+
+Arguments:
+  <PATH>
+          Path to Mach-O binary to examine
+
+Options:
+  -C, --config-file <CONFIG_PATH>
+          Explicit configuration file to load.
+          
+          If provided, the default configuration files are not loaded, even if they exist.
+          
+          Can be specified multiple times. Files are loaded/merged in the order given.
+          
+          The special value `/dev/null` can be used to specify an empty/null config file. It can be used to short-circuit loading of default config files.
+
+      --hash <HASH>
+          Hashing algorithm to use
+          
+          [default: sha256]
+          [possible values: none, sha1, sha256, sha256-truncated, sha384, sha512]
+
+  -P, --profile <PROFILE>
+          Configuration profile to load.
+          
+          If not specified, the implicit "default" profile is loaded.
+
+      --page-size <PAGE_SIZE>
+          Chunk size to digest over
+          
+          [default: 4096]
+
+      --universal-index <UNIVERSAL_INDEX>
+          Index of Mach-O binary to operate on within a universal/fat binary
+          
+          [default: 0]
+
+  -v, --verbose...
+          Increase logging verbosity. Can be specified multiple times
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+```

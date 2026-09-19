@@ -1,0 +1,46 @@
+```
+$ rcodesign help keychain-export-certificate-chain
+Export Apple CA certificates from the macOS Keychain
+
+Usage: rcodesign[EXE] keychain-export-certificate-chain [OPTIONS] --user-id <USER_ID>
+
+Options:
+  -C, --config-file <CONFIG_PATH>
+          Explicit configuration file to load.
+          
+          If provided, the default configuration files are not loaded, even if they exist.
+          
+          Can be specified multiple times. Files are loaded/merged in the order given.
+          
+          The special value `/dev/null` can be used to specify an empty/null config file. It can be used to short-circuit loading of default config files.
+
+      --domain <DOMAIN>
+          Keychain domain to operate on
+          
+          [default: user]
+          [possible values: user, system, common, dynamic]
+
+  -P, --profile <PROFILE>
+          Configuration profile to load.
+          
+          If not specified, the implicit "default" profile is loaded.
+
+      --password <PASSWORD>
+          Password to unlock the Keychain
+
+      --password-file <PASSWORD_PATH>
+          File containing password to use to unlock the Keychain
+
+  -v, --verbose...
+          Increase logging verbosity. Can be specified multiple times
+
+      --no-print-self
+          Print only the issuing certificate chain, not the subject certificate
+
+      --user-id <USER_ID>
+          User ID value of code signing certificate to find and whose CA chain to export
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+```

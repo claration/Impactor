@@ -1,0 +1,139 @@
+```
+$ rcodesign generate-self-signed-certificate --help
+Generate a self-signed certificate for code signing
+
+This command will generate a new key pair using the algorithm of choice then create an X.509 certificate wrapper for it that is signed with the just-generated private key. The created X.509 certificate has extensions that mark it as appropriate for code signing.
+
+Certificates generated with this command can be useful for local testing. However, because it is a self-signed certificate and isn't signed by a trusted certificate authority, Apple operating systems may refuse to load binaries signed with it.
+
+By default the command prints 2 PEM encoded blocks. One block is for the X.509 public certificate. The other is for the PKCS#8 private key (which can include the public key).
+
+The `--pem-filename` argument can be specified to write the generated certificate pair to a pair of files. The destination files will have `.crt` and `.key` appended to the value provided.
+
+When the certificate is written to a file, it isn't printed to stdout.
+
+Usage: rcodesign[EXE] generate-self-signed-certificate [OPTIONS] --person-name <PERSON_NAME>
+
+Options:
+      --algorithm <ALGORITHM>
+          Which key type to use
+          
+          [default: rsa]
+          [possible values: ecdsa, ed25519, rsa]
+
+  -C, --config-file <CONFIG_PATH>
+          Explicit configuration file to load.
+          
+          If provided, the default configuration files are not loaded, even if they exist.
+          
+          Can be specified multiple times. Files are loaded/merged in the order given.
+          
+          The special value `/dev/null` can be used to specify an empty/null config file. It can be used to short-circuit loading of default config files.
+
+      --profile <PROFILE>
+          [default: apple-development]
+          [possible values: mac-installer-distribution, apple-distribution, apple-development, developer-id-application, developer-id-installer]
+
+      --team-id <TEAM_ID>
+          Team ID (this is a short string attached to your Apple Developer account)
+          
+          [default: unset]
+
+  -v, --verbose...
+          Increase logging verbosity. Can be specified multiple times
+
+      --person-name <PERSON_NAME>
+          The name of the person this certificate is for
+
+      --country-name <COUNTRY_NAME>
+          Country Name (C) value for certificate identifier
+          
+          [default: XX]
+
+      --validity-days <VALIDITY_DAYS>
+          How many days the certificate should be valid for
+          
+          [default: 365]
+
+      --pem-filename <PEM_FILENAME>
+          Base name of files to write PEM encoded certificate to
+
+      --pem-unified-file <PATH>
+          Filename to write PEM encoded private key and public certificate to
+
+      --p12-file <PATH>
+          Filename to write a PKCS#12 / p12 / PFX encoded certificate to
+
+      --p12-password <P12_PASSWORD>
+          Password to use to encrypt --p12-path.
+          
+          If not provided you will be prompted for a password.
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+```
+
+```
+$ rcodesign generate-self-signed-certificate --profile apple-development --person-name 'Johnny Apple'
+-----BEGIN CERTIFICATE-----
+[..]
+[..]
+[..]
+[..]
+[..]
+[..]
+[..]
+[..]
+[..]
+[..]
+[..]
+[..]
+[..]
+[..]
+[..]
+[..]
+[..]
+[..]
+[..]
+[..]
+[..]
+-----END CERTIFICATE-----
+-----BEGIN PRIVATE KEY-----
+[..]
+[..]
+[..]
+[..]
+[..]
+[..]
+[..]
+[..]
+[..]
+[..]
+[..]
+[..]
+[..]
+[..]
+[..]
+[..]
+[..]
+[..]
+[..]
+[..]
+[..]
+[..]
+[..]
+[..]
+[..]
+[..]
+-----END PRIVATE KEY-----
+
+```
+
+Try a PKCS#12 file
+
+```
+$ rcodesign generate-self-signed-certificate --profile apple-development --person-name 'Johnny Apple' --p12-file test.p12 --p12-password password
+writing PKCS#12 certificate to test.p12
+
+```

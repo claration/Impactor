@@ -1,0 +1,40 @@
+```
+$ rcodesign help windows-store-export-certificate-chain
+Export CA certificates from the Windows Store
+
+Usage: rcodesign[EXE] windows-store-export-certificate-chain [OPTIONS] --thumbprint <THUMBPRINT>
+
+Options:
+  -C, --config-file <CONFIG_PATH>
+          Explicit configuration file to load.
+          
+          If provided, the default configuration files are not loaded, even if they exist.
+          
+          Can be specified multiple times. Files are loaded/merged in the order given.
+          
+          The special value `/dev/null` can be used to specify an empty/null config file. It can be used to short-circuit loading of default config files.
+
+      --windows-store-name <STORE>
+          Windows Store to operate on
+          
+          [default: user]
+          [possible values: user, machine, service]
+
+      --no-print-self
+          Print only the issuing certificate chain, not the subject certificate
+
+  -P, --profile <PROFILE>
+          Configuration profile to load.
+          
+          If not specified, the implicit "default" profile is loaded.
+
+      --thumbprint <THUMBPRINT>
+          SHA-1 thumbprint of code signing certificate to find and whose CA chain to export
+
+  -v, --verbose...
+          Increase logging verbosity. Can be specified multiple times
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+```

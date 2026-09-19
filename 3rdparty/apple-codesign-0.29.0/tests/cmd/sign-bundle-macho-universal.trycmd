@@ -1,0 +1,438 @@
+Sign a bundle containing a multi-arch Mach-O binary
+
+```
+$ rcodesign debug-create-macho --architecture aarch64 exe.aarch64
+assuming default minimum version 11.0.0
+writing Mach-O to exe.aarch64
+
+$ rcodesign debug-create-macho --architecture x86-64 --minimum-os-version 10.9.0 exe.x86-64
+writing Mach-O to exe.x86-64
+
+$ rcodesign macho-universal-create -o MyApp.app/Contents/MacOS/MyApp exe.aarch64 exe.x86-64
+adding exe.aarch64
+adding exe.x86-64
+writing MyApp.app/Contents/MacOS/MyApp
+
+$ rcodesign macho-universal-create -o MyApp.app/Contents/MacOS/extra-bin exe.aarch64 exe.x86-64
+adding exe.aarch64
+adding exe.x86-64
+writing MyApp.app/Contents/MacOS/extra-bin
+
+$ rcodesign debug-create-info-plist --bundle-name MyApp MyApp.app/Contents/Info.plist
+writing MyApp.app/Contents/Info.plist
+
+$ rcodesign sign MyApp.app MyApp.app.signed
+signing MyApp.app to MyApp.app.signed
+signing bundle at MyApp.app
+signing bundle at MyApp.app into MyApp.app.signed
+signing Mach-O file Contents/MacOS/extra-bin
+signing main executable Contents/MacOS/MyApp
+
+$ rcodesign debug-file-tree MyApp.app.signed
+d                      MyApp.app.signed/
+d                      MyApp.app.signed/Contents
+f 0a5902dc8e47f490d038 MyApp.app.signed/Contents/Info.plist
+d                      MyApp.app.signed/Contents/MacOS
+f 3eb5869588cab4d817b5 MyApp.app.signed/Contents/MacOS/MyApp
+f f6e7481573cf18d78a0e MyApp.app.signed/Contents/MacOS/extra-bin
+d                      MyApp.app.signed/Contents/_CodeSignature
+f 730159f6d521ed5ac796 MyApp.app.signed/Contents/_CodeSignature/CodeResources
+
+$ rcodesign print-signature-info MyApp.app.signed
+- path: Contents/Info.plist
+  file_size: 576
+  file_sha256: 0a5902dc8e47f490d03889d3593d17bddbf79e6c1f79494e20dd28f9459effa5
+  entity: other
+- path: Contents/MacOS/MyApp
+  file_size: 60432
+  file_sha256: 3eb5869588cab4d817b5b2c1b79ae621b2be48356fbbe6c58777721587af047b
+  sub_path: macho-index:0
+  entity:
+    mach_o:
+      macho_linkedit_start_offset: 16384 / 0x4000
+      macho_signature_start_offset: 16400 / 0x4010
+      macho_signature_end_offset: 17098 / 0x42ca
+      macho_linkedit_end_offset: 23568 / 0x5c10
+      macho_end_offset: 23568 / 0x5c10
+      linkedit_signature_start_offset: 16 / 0x10
+      linkedit_signature_end_offset: 714 / 0x2ca
+      linkedit_bytes_after_signature: 6470 / 0x1946
+      signature:
+        superblob_length: 698 / 0x2ba
+        blob_count: 4
+        blobs:
+        - slot: CodeDirectory (0)
+          magic: fade0c02
+          length: 269
+          sha1: 32ab361d982640eead191422e662fb8d96622fe3
+          sha256: 723ba236a1c66db54ac3d1b051cb604a1ce428ce042c2c79b30b4aec4b6cf68c
+        - slot: RequirementSet (2)
+          magic: fade0c01
+          length: 12
+          sha1: 3a75f6db058529148e14dd7ea1b4729cc09ec973
+          sha256: 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986
+        - slot: 'CodeDirectory Alternate #0 (4096)'
+          magic: fade0c02
+          length: 365
+          sha1: 7e45ead6a3793876c2aac70ead9510fc6a206b31
+          sha256: df50890b3494d4e93fba241a2adf1667ab452210cfbc99269800b14ac9a6db4f
+        - slot: CMS Signature (65536)
+          magic: fade0b01
+          length: 8
+          sha1: 2a7254313aa41796079bb0e9d0f044345f69f98b
+          sha256: e6c83bc98a10348492c7d4d2378a54572ef29e1a5692ccd02b5e29f4b762d6a0
+        code_directory:
+          version: '0x20400'
+          flags: CodeSignatureFlags(ADHOC)
+          identifier: com.example.mybundle
+          digest_type: sha1
+          platform: 0
+          signed_entity_size: 16400
+          executable_segment_flags: ExecutableSegmentFlags(MAIN_BINARY)
+          code_digests_count: 5
+          slot_digests:
+          - 'Info (1): 65bf1c26bc63ccdfe6688cc787b06f88f3435ef0'
+          - 'RequirementSet (2): 3a75f6db058529148e14dd7ea1b4729cc09ec973'
+          - 'Resources (3): b7902213e12d68fd98ce5d8f8129a6805d3eb4da'
+        alternative_code_directories:
+        - - 'CodeDirectory Alternate #0 (4096)'
+          - version: '0x20400'
+            flags: CodeSignatureFlags(ADHOC)
+            identifier: com.example.mybundle
+            digest_type: sha256
+            platform: 0
+            signed_entity_size: 16400
+            executable_segment_flags: ExecutableSegmentFlags(MAIN_BINARY)
+            code_digests_count: 5
+            slot_digests:
+            - 'Info (1): 0a5902dc8e47f490d03889d3593d17bddbf79e6c1f79494e20dd28f9459effa5'
+            - 'RequirementSet (2): 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986'
+            - 'Resources (3): 730159f6d521ed5ac796783ae0077005b1dc406a348af63b6be3c349f59881b7'
+        cms: null
+- path: Contents/MacOS/MyApp
+  file_size: 60432
+  file_sha256: 3eb5869588cab4d817b5b2c1b79ae621b2be48356fbbe6c58777721587af047b
+  sub_path: macho-index:1
+  entity:
+    mach_o:
+      macho_linkedit_start_offset: 4096 / 0x1000
+      macho_signature_start_offset: 4112 / 0x1010
+      macho_signature_end_offset: 4654 / 0x122e
+      macho_linkedit_end_offset: 11280 / 0x2c10
+      macho_end_offset: 11280 / 0x2c10
+      linkedit_signature_start_offset: 16 / 0x10
+      linkedit_signature_end_offset: 558 / 0x22e
+      linkedit_bytes_after_signature: 6626 / 0x19e2
+      signature:
+        superblob_length: 542 / 0x21e
+        blob_count: 4
+        blobs:
+        - slot: CodeDirectory (0)
+          magic: fade0c02
+          length: 209
+          sha1: a80bc480c310d72c4125bf1cf54b5f492e451cca
+          sha256: 231dbee72992a30c9ead07159d14153ea3b48292ed449b38135aca0190747f54
+        - slot: RequirementSet (2)
+          magic: fade0c01
+          length: 12
+          sha1: 3a75f6db058529148e14dd7ea1b4729cc09ec973
+          sha256: 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986
+        - slot: 'CodeDirectory Alternate #0 (4096)'
+          magic: fade0c02
+          length: 269
+          sha1: 84c1812f00ed687db767796c66190a076ea7976e
+          sha256: 34b18e9cc482750023d52141da175ceae315215cf4a7ebc2122459a0a10fbc93
+        - slot: CMS Signature (65536)
+          magic: fade0b01
+          length: 8
+          sha1: 2a7254313aa41796079bb0e9d0f044345f69f98b
+          sha256: e6c83bc98a10348492c7d4d2378a54572ef29e1a5692ccd02b5e29f4b762d6a0
+        code_directory:
+          version: '0x20400'
+          flags: CodeSignatureFlags(ADHOC)
+          identifier: com.example.mybundle
+          digest_type: sha1
+          platform: 0
+          signed_entity_size: 4112
+          executable_segment_flags: ExecutableSegmentFlags(MAIN_BINARY)
+          code_digests_count: 2
+          slot_digests:
+          - 'Info (1): 65bf1c26bc63ccdfe6688cc787b06f88f3435ef0'
+          - 'RequirementSet (2): 3a75f6db058529148e14dd7ea1b4729cc09ec973'
+          - 'Resources (3): b7902213e12d68fd98ce5d8f8129a6805d3eb4da'
+        alternative_code_directories:
+        - - 'CodeDirectory Alternate #0 (4096)'
+          - version: '0x20400'
+            flags: CodeSignatureFlags(ADHOC)
+            identifier: com.example.mybundle
+            digest_type: sha256
+            platform: 0
+            signed_entity_size: 4112
+            executable_segment_flags: ExecutableSegmentFlags(MAIN_BINARY)
+            code_digests_count: 2
+            slot_digests:
+            - 'Info (1): 0a5902dc8e47f490d03889d3593d17bddbf79e6c1f79494e20dd28f9459effa5'
+            - 'RequirementSet (2): 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986'
+            - 'Resources (3): 730159f6d521ed5ac796783ae0077005b1dc406a348af63b6be3c349f59881b7'
+        cms: null
+- path: Contents/MacOS/extra-bin
+  file_size: 60432
+  file_sha256: f6e7481573cf18d78a0ed99022d118a465b39b688217179ea80347de77a107a2
+  sub_path: macho-index:0
+  entity:
+    mach_o:
+      macho_linkedit_start_offset: 16384 / 0x4000
+      macho_signature_start_offset: 16400 / 0x4010
+      macho_signature_end_offset: 17024 / 0x4280
+      macho_linkedit_end_offset: 23568 / 0x5c10
+      macho_end_offset: 23568 / 0x5c10
+      linkedit_signature_start_offset: 16 / 0x10
+      linkedit_signature_end_offset: 640 / 0x280
+      linkedit_bytes_after_signature: 6544 / 0x1990
+      signature:
+        superblob_length: 624 / 0x270
+        blob_count: 4
+        blobs:
+        - slot: CodeDirectory (0)
+          magic: fade0c02
+          length: 238
+          sha1: 33d0d81907883efd5fdd04af1ad6325db9ca0973
+          sha256: 402627fdbaeea6373a2e5b5b56784a6aca549b9c1f39a8b5e4bffdda78dfd170
+        - slot: RequirementSet (2)
+          magic: fade0c01
+          length: 12
+          sha1: 3a75f6db058529148e14dd7ea1b4729cc09ec973
+          sha256: 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986
+        - slot: 'CodeDirectory Alternate #0 (4096)'
+          magic: fade0c02
+          length: 322
+          sha1: af7a5c530e0ee18a6425da22361915baf5482bdd
+          sha256: 639f6dcf3661837c14d59b907bc607cec675bc7eefa2df8c6819d8492b6da455
+        - slot: CMS Signature (65536)
+          magic: fade0b01
+          length: 8
+          sha1: 2a7254313aa41796079bb0e9d0f044345f69f98b
+          sha256: e6c83bc98a10348492c7d4d2378a54572ef29e1a5692ccd02b5e29f4b762d6a0
+        code_directory:
+          version: '0x20400'
+          flags: CodeSignatureFlags(ADHOC)
+          identifier: extra-bin
+          digest_type: sha1
+          platform: 0
+          signed_entity_size: 16400
+          executable_segment_flags: ExecutableSegmentFlags(MAIN_BINARY)
+          code_digests_count: 5
+          slot_digests:
+          - 'Info (1): 0000000000000000000000000000000000000000'
+          - 'RequirementSet (2): 3a75f6db058529148e14dd7ea1b4729cc09ec973'
+        alternative_code_directories:
+        - - 'CodeDirectory Alternate #0 (4096)'
+          - version: '0x20400'
+            flags: CodeSignatureFlags(ADHOC)
+            identifier: extra-bin
+            digest_type: sha256
+            platform: 0
+            signed_entity_size: 16400
+            executable_segment_flags: ExecutableSegmentFlags(MAIN_BINARY)
+            code_digests_count: 5
+            slot_digests:
+            - 'Info (1): 0000000000000000000000000000000000000000000000000000000000000000'
+            - 'RequirementSet (2): 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986'
+        cms: null
+- path: Contents/MacOS/extra-bin
+  file_size: 60432
+  file_sha256: f6e7481573cf18d78a0ed99022d118a465b39b688217179ea80347de77a107a2
+  sub_path: macho-index:1
+  entity:
+    mach_o:
+      macho_linkedit_start_offset: 4096 / 0x1000
+      macho_signature_start_offset: 4112 / 0x1010
+      macho_signature_end_offset: 4580 / 0x11e4
+      macho_linkedit_end_offset: 11280 / 0x2c10
+      macho_end_offset: 11280 / 0x2c10
+      linkedit_signature_start_offset: 16 / 0x10
+      linkedit_signature_end_offset: 484 / 0x1e4
+      linkedit_bytes_after_signature: 6700 / 0x1a2c
+      signature:
+        superblob_length: 468 / 0x1d4
+        blob_count: 4
+        blobs:
+        - slot: CodeDirectory (0)
+          magic: fade0c02
+          length: 178
+          sha1: 081cb913e277d2314f0cf29f09ad50d6706ee05c
+          sha256: 503220ed37549b1acb847a37ec37c68b393466a5c3581d6bdf60b7202e733e44
+        - slot: RequirementSet (2)
+          magic: fade0c01
+          length: 12
+          sha1: 3a75f6db058529148e14dd7ea1b4729cc09ec973
+          sha256: 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986
+        - slot: 'CodeDirectory Alternate #0 (4096)'
+          magic: fade0c02
+          length: 226
+          sha1: 08f6f638476c7f9e3538bd455889beb8852dcb92
+          sha256: 3e8d1a5abf40765a1d15ff00407a8822f153afa966f9283e813b7b456a7c5888
+        - slot: CMS Signature (65536)
+          magic: fade0b01
+          length: 8
+          sha1: 2a7254313aa41796079bb0e9d0f044345f69f98b
+          sha256: e6c83bc98a10348492c7d4d2378a54572ef29e1a5692ccd02b5e29f4b762d6a0
+        code_directory:
+          version: '0x20400'
+          flags: CodeSignatureFlags(ADHOC)
+          identifier: extra-bin
+          digest_type: sha1
+          platform: 0
+          signed_entity_size: 4112
+          executable_segment_flags: ExecutableSegmentFlags(MAIN_BINARY)
+          code_digests_count: 2
+          slot_digests:
+          - 'Info (1): 0000000000000000000000000000000000000000'
+          - 'RequirementSet (2): 3a75f6db058529148e14dd7ea1b4729cc09ec973'
+        alternative_code_directories:
+        - - 'CodeDirectory Alternate #0 (4096)'
+          - version: '0x20400'
+            flags: CodeSignatureFlags(ADHOC)
+            identifier: extra-bin
+            digest_type: sha256
+            platform: 0
+            signed_entity_size: 4112
+            executable_segment_flags: ExecutableSegmentFlags(MAIN_BINARY)
+            code_digests_count: 2
+            slot_digests:
+            - 'Info (1): 0000000000000000000000000000000000000000000000000000000000000000'
+            - 'RequirementSet (2): 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986'
+        cms: null
+- path: Contents/_CodeSignature/CodeResources
+  file_size: 2601
+  file_sha256: 730159f6d521ed5ac796783ae0077005b1dc406a348af63b6be3c349f59881b7
+  entity:
+    bundle_code_signature_file: !ResourcesXml
+    - <?xml version="1.0" encoding="UTF-8"?>
+    - <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+    - <plist version="1.0">
+    - <dict>
+    - '  <key>files</key>'
+    - '  <dict/>'
+    - '  <key>files2</key>'
+    - '  <dict>'
+    - '    <key>MacOS/extra-bin</key>'
+    - '    <dict>'
+    - '      <key>cdhash</key>'
+    - '      <data>'
+    - '      Y59tzzZhg3wU1ZuQe8YHzsZ1vH4='
+    - '      </data>'
+    - '      <key>requirement</key>'
+    - '      <string>(((cdhash H"33d0d81907883efd5fdd04af1ad6325db9ca0973") or (cdhash H"639f6dcf3661837c14d59b907bc607cec675bc7e")) or (cdhash H"081cb913e277d2314f0cf29f09ad50d6706ee05c")) or (cdhash H"3e8d1a5abf40765a1d15ff00407a8822f153afa9")</string>'
+    - '    </dict>'
+    - '  </dict>'
+    - '  <key>rules</key>'
+    - '  <dict>'
+    - '    <key>^Resources/</key>'
+    - '    <true/>'
+    - '    <key>^Resources/.*/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>optional</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1000</real>'
+    - '    </dict>'
+    - '    <key>^Resources/.*/.lproj/locversion.plist$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1100</real>'
+    - '    </dict>'
+    - '    <key>^Resources/Base/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>1010</real>'
+    - '    </dict>'
+    - '    <key>^version.plist$</key>'
+    - '    <true/>'
+    - '  </dict>'
+    - '  <key>rules2</key>'
+    - '  <dict>'
+    - '    <key>.*/.dSYM($|/)</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>11</real>'
+    - '    </dict>'
+    - '    <key>^(.*/)?/.DS_Store$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>2000</real>'
+    - '    </dict>'
+    - '    <key>^(Frameworks|SharedFrameworks|PlugIns|Plug-ins|XPCServices|Helpers|MacOS|Library/(Automator|Spotlight|LoginItems))/</key>'
+    - '    <dict>'
+    - '      <key>nested</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>10</real>'
+    - '    </dict>'
+    - '    <key>^.*</key>'
+    - '    <true/>'
+    - '    <key>^Info/.plist$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^PkgInfo$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^Resources/</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^Resources/.*/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>optional</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1000</real>'
+    - '    </dict>'
+    - '    <key>^Resources/.*/.lproj/locversion.plist$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1100</real>'
+    - '    </dict>'
+    - '    <key>^Resources/Base/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>1010</real>'
+    - '    </dict>'
+    - '    <key>^[^/]+$</key>'
+    - '    <dict>'
+    - '      <key>nested</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>10</real>'
+    - '    </dict>'
+    - '    <key>^embedded/.provisionprofile$</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^version/.plist$</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '  </dict>'
+    - </dict>
+    - </plist>
+    - ''
+
+```

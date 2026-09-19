@@ -1,0 +1,844 @@
+```
+$ rcodesign debug-create-macho MyApp.app/Contents/MacOS/MyApp
+assuming default minimum version 11.0.0
+writing Mach-O to MyApp.app/Contents/MacOS/MyApp
+
+$ rcodesign debug-create-info-plist --bundle-name MyApp MyApp.app/Contents/Info.plist
+writing MyApp.app/Contents/Info.plist
+
+$ mkdir -p MyApp.app/Contents/Resources
+$ touch MyApp.app/Contents/Resources/AppIcon.icns
+
+$ rcodesign debug-create-macho --file-type dylib MyApp.app/Contents/Frameworks/Sparkle.framework/Versions/A/Sparkle
+assuming default minimum version 11.0.0
+writing Mach-O to MyApp.app/Contents/Frameworks/Sparkle.framework/Versions/A/Sparkle
+
+$ rcodesign debug-create-info-plist --bundle-name Sparkle MyApp.app/Contents/Frameworks/Sparkle.framework/Versions/A/Resources/Info.plist
+writing MyApp.app/Contents/Frameworks/Sparkle.framework/Versions/A/Resources/Info.plist
+
+$ mkdir -p MyApp.app/Contents/Frameworks/Sparkle.framework/Versions/A/Headers
+$ mkdir -p MyApp.app/Contents/Frameworks/Sparkle.framework/Versions/A/Modules
+$ mkdir -p MyApp.app/Contents/Frameworks/Sparkle.framework/Versions/A/PrivateHeaders
+$ mkdir -p MyApp.app/Contents/Frameworks/Sparkle.framework/Versions/A/Resources/en.lproj
+
+$ touch MyApp.app/Contents/Frameworks/Sparkle.framework/Versions/A/Headers/Sparkle.h
+$ touch MyApp.app/Contents/Frameworks/Sparkle.framework/Versions/A/Modules/module.modulemap
+$ touch MyApp.app/Contents/Frameworks/Sparkle.framework/Versions/A/Resources/DarkAqua.css
+$ touch MyApp.app/Contents/Frameworks/Sparkle.framework/Versions/A/Resources/en.lproj/Sparkle.strings
+
+$ rcodesign debug-create-macho MyApp.app/Contents/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/MacOS/Autoupdate
+assuming default minimum version 11.0.0
+writing Mach-O to MyApp.app/Contents/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/MacOS/Autoupdate
+
+$ rcodesign debug-create-info-plist --bundle-name Autoupdate MyApp.app/Contents/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/Info.plist
+writing MyApp.app/Contents/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/Info.plist
+
+$ mkdir -p MyApp.app/Contents/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/Resources/en.lproj
+$ touch MyApp.app/Contents/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/Resources/en.lproj/Sparkle.strings
+
+$ ln -s A MyApp.app/Contents/Frameworks/Sparkle.framework/Versions/Current
+$ ln -s Versions/Current/Headers MyApp.app/Contents/Frameworks/Sparkle.framework/Headers
+$ ln -s Versions/Current/Modules MyApp.app/Contents/Frameworks/Sparkle.framework/Modules
+$ ln -s Versions/Current/PrivateHeaders MyApp.app/Contents/Frameworks/Sparkle.framework/PrivateHeaders
+$ ln -s Versions/Current/Resources MyApp.app/Contents/Frameworks/Sparkle.framework/Resources
+$ ln -s Versions/Current/Sparkle MyApp.app/Contents/Frameworks/Sparkle.framework/Sparkle
+
+$ rcodesign sign MyApp.app MyApp.app.signed
+signing MyApp.app to MyApp.app.signed
+signing bundle at MyApp.app
+signing 3 nested bundles in the following order:
+Contents/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app
+Contents/Frameworks/Sparkle.framework/Versions/A
+Contents/Frameworks/Sparkle.framework
+entering nested bundle Contents/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app
+signing bundle at MyApp.app/Contents/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app into MyApp.app.signed/Contents/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app
+signing main executable Contents/MacOS/Autoupdate
+leaving nested bundle Contents/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app
+entering nested bundle Contents/Frameworks/Sparkle.framework/Versions/A
+signing bundle at MyApp.app/Contents/Frameworks/Sparkle.framework/Versions/A into MyApp.app.signed/Contents/Frameworks/Sparkle.framework/Versions/A
+signing main executable Sparkle
+leaving nested bundle Contents/Frameworks/Sparkle.framework/Versions/A
+entering nested bundle Contents/Frameworks/Sparkle.framework
+signing bundle at MyApp.app/Contents/Frameworks/Sparkle.framework into MyApp.app.signed/Contents/Frameworks/Sparkle.framework
+leaving nested bundle Contents/Frameworks/Sparkle.framework
+signing bundle at MyApp.app into MyApp.app.signed
+signing main executable Contents/MacOS/MyApp
+
+$ rcodesign debug-file-tree MyApp.app.signed
+d                      MyApp.app.signed/
+d                      MyApp.app.signed/Contents
+d                      MyApp.app.signed/Contents/Frameworks
+d                      MyApp.app.signed/Contents/Frameworks/Sparkle.framework
+l                      MyApp.app.signed/Contents/Frameworks/Sparkle.framework/Headers -> Versions/Current/Headers
+l                      MyApp.app.signed/Contents/Frameworks/Sparkle.framework/Modules -> Versions/Current/Modules
+l                      MyApp.app.signed/Contents/Frameworks/Sparkle.framework/PrivateHeaders -> Versions/Current/PrivateHeaders
+l                      MyApp.app.signed/Contents/Frameworks/Sparkle.framework/Resources -> Versions/Current/Resources
+l                      MyApp.app.signed/Contents/Frameworks/Sparkle.framework/Sparkle -> Versions/Current/Sparkle
+d                      MyApp.app.signed/Contents/Frameworks/Sparkle.framework/Versions
+d                      MyApp.app.signed/Contents/Frameworks/Sparkle.framework/Versions/A
+d                      MyApp.app.signed/Contents/Frameworks/Sparkle.framework/Versions/A/Headers
+f e3b0c44298fc1c149afb MyApp.app.signed/Contents/Frameworks/Sparkle.framework/Versions/A/Headers/Sparkle.h
+d                      MyApp.app.signed/Contents/Frameworks/Sparkle.framework/Versions/A/Modules
+f e3b0c44298fc1c149afb MyApp.app.signed/Contents/Frameworks/Sparkle.framework/Versions/A/Modules/module.modulemap
+d                      MyApp.app.signed/Contents/Frameworks/Sparkle.framework/Versions/A/Resources
+d                      MyApp.app.signed/Contents/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app
+d                      MyApp.app.signed/Contents/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents
+f 41d88c15e923bda8c225 MyApp.app.signed/Contents/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/Info.plist
+d                      MyApp.app.signed/Contents/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/MacOS
+f ccb6e50095f95b7ba447 MyApp.app.signed/Contents/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/MacOS/Autoupdate
+d                      MyApp.app.signed/Contents/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/Resources
+d                      MyApp.app.signed/Contents/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/Resources/en.lproj
+f e3b0c44298fc1c149afb MyApp.app.signed/Contents/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/Resources/en.lproj/Sparkle.strings
+d                      MyApp.app.signed/Contents/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/_CodeSignature
+f 0740079f9cc964f82201 MyApp.app.signed/Contents/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/_CodeSignature/CodeResources
+f e3b0c44298fc1c149afb MyApp.app.signed/Contents/Frameworks/Sparkle.framework/Versions/A/Resources/DarkAqua.css
+f fc10a69db39ae9732767 MyApp.app.signed/Contents/Frameworks/Sparkle.framework/Versions/A/Resources/Info.plist
+d                      MyApp.app.signed/Contents/Frameworks/Sparkle.framework/Versions/A/Resources/en.lproj
+f e3b0c44298fc1c149afb MyApp.app.signed/Contents/Frameworks/Sparkle.framework/Versions/A/Resources/en.lproj/Sparkle.strings
+f 9f41a07525f12e42afbe MyApp.app.signed/Contents/Frameworks/Sparkle.framework/Versions/A/Sparkle
+d                      MyApp.app.signed/Contents/Frameworks/Sparkle.framework/Versions/A/_CodeSignature
+f e8441b0a5cdcdcea855a MyApp.app.signed/Contents/Frameworks/Sparkle.framework/Versions/A/_CodeSignature/CodeResources
+l                      MyApp.app.signed/Contents/Frameworks/Sparkle.framework/Versions/Current -> A
+f 0a5902dc8e47f490d038 MyApp.app.signed/Contents/Info.plist
+d                      MyApp.app.signed/Contents/MacOS
+f 90d4920250fbddd56eb3 MyApp.app.signed/Contents/MacOS/MyApp
+d                      MyApp.app.signed/Contents/Resources
+f e3b0c44298fc1c149afb MyApp.app.signed/Contents/Resources/AppIcon.icns
+d                      MyApp.app.signed/Contents/_CodeSignature
+f 4f5c3a58e8cdc1d972ba MyApp.app.signed/Contents/_CodeSignature/CodeResources
+
+$ rcodesign print-signature-info MyApp.app.signed
+- path: Contents/Frameworks/Sparkle.framework/Headers
+  symlink_target: Versions/Current/Headers
+  entity: other
+- path: Contents/Frameworks/Sparkle.framework/Modules
+  symlink_target: Versions/Current/Modules
+  entity: other
+- path: Contents/Frameworks/Sparkle.framework/PrivateHeaders
+  symlink_target: Versions/Current/PrivateHeaders
+  entity: other
+- path: Contents/Frameworks/Sparkle.framework/Resources
+  symlink_target: Versions/Current/Resources
+  entity: other
+- path: Contents/Frameworks/Sparkle.framework/Sparkle
+  symlink_target: Versions/Current/Sparkle
+  entity: other
+- path: Contents/Frameworks/Sparkle.framework/Versions/A/Headers/Sparkle.h
+  file_size: 0
+  file_sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+  entity: other
+- path: Contents/Frameworks/Sparkle.framework/Versions/A/Modules/module.modulemap
+  file_size: 0
+  file_sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+  entity: other
+- path: Contents/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/Info.plist
+  file_size: 591
+  file_sha256: 41d88c15e923bda8c2256d9ec934b3dd53ef43db06bf73cdb68fc25eff77b78e
+  entity: other
+- path: Contents/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/MacOS/Autoupdate
+  file_size: 22544
+  file_sha256: ccb6e50095f95b7ba44724673fffd70258c3ef86ee4b42c5f7543f9185ef1efe
+  entity:
+    mach_o:
+      macho_linkedit_start_offset: 16384 / 0x4000
+      macho_signature_start_offset: 16400 / 0x4010
+      macho_signature_end_offset: 16821 / 0x41b5
+      macho_linkedit_end_offset: 22544 / 0x5810
+      macho_end_offset: 22544 / 0x5810
+      linkedit_signature_start_offset: 16 / 0x10
+      linkedit_signature_end_offset: 437 / 0x1b5
+      linkedit_bytes_after_signature: 5723 / 0x165b
+      signature:
+        superblob_length: 421 / 0x1a5
+        blob_count: 3
+        blobs:
+        - slot: CodeDirectory (0)
+          magic: fade0c02
+          length: 365
+          sha1: c9fa0ab0fd50466dbdd211d0dddeebc25db2b639
+          sha256: a48bb6ceafa9f883b35e0a1acaaabb0a9052765f49eab1c5a4a1caeb03bb5b94
+        - slot: RequirementSet (2)
+          magic: fade0c01
+          length: 12
+          sha1: 3a75f6db058529148e14dd7ea1b4729cc09ec973
+          sha256: 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986
+        - slot: CMS Signature (65536)
+          magic: fade0b01
+          length: 8
+          sha1: 2a7254313aa41796079bb0e9d0f044345f69f98b
+          sha256: e6c83bc98a10348492c7d4d2378a54572ef29e1a5692ccd02b5e29f4b762d6a0
+        code_directory:
+          version: '0x20400'
+          flags: CodeSignatureFlags(ADHOC)
+          identifier: com.example.mybundle
+          digest_type: sha256
+          platform: 0
+          signed_entity_size: 16400
+          executable_segment_flags: ExecutableSegmentFlags(MAIN_BINARY)
+          code_digests_count: 5
+          slot_digests:
+          - 'Info (1): 41d88c15e923bda8c2256d9ec934b3dd53ef43db06bf73cdb68fc25eff77b78e'
+          - 'RequirementSet (2): 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986'
+          - 'Resources (3): 0740079f9cc964f8220145e3ef8c10590cfa3ae48707b8a649b833f5661f8887'
+        cms: null
+- path: Contents/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/Resources/en.lproj/Sparkle.strings
+  file_size: 0
+  file_sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+  entity: other
+- path: Contents/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app/Contents/_CodeSignature/CodeResources
+  file_size: 2579
+  file_sha256: 0740079f9cc964f8220145e3ef8c10590cfa3ae48707b8a649b833f5661f8887
+  entity:
+    bundle_code_signature_file: !ResourcesXml
+    - <?xml version="1.0" encoding="UTF-8"?>
+    - <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+    - <plist version="1.0">
+    - <dict>
+    - '  <key>files</key>'
+    - '  <dict>'
+    - '    <key>Resources/en.lproj/Sparkle.strings</key>'
+    - '    <dict>'
+    - '      <key>hash</key>'
+    - '      <data>'
+    - '      2jmj7l5rSw0yVb/vlWAYkK/YBwk='
+    - '      </data>'
+    - '      <key>optional</key>'
+    - '      <true/>'
+    - '    </dict>'
+    - '  </dict>'
+    - '  <key>files2</key>'
+    - '  <dict>'
+    - '    <key>Resources/en.lproj/Sparkle.strings</key>'
+    - '    <dict>'
+    - '      <key>hash2</key>'
+    - '      <data>'
+    - '      47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU='
+    - '      </data>'
+    - '      <key>optional</key>'
+    - '      <true/>'
+    - '    </dict>'
+    - '  </dict>'
+    - '  <key>rules</key>'
+    - '  <dict>'
+    - '    <key>^Resources/</key>'
+    - '    <true/>'
+    - '    <key>^Resources/.*/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>optional</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1000</real>'
+    - '    </dict>'
+    - '    <key>^Resources/.*/.lproj/locversion.plist$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1100</real>'
+    - '    </dict>'
+    - '    <key>^Resources/Base/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>1010</real>'
+    - '    </dict>'
+    - '    <key>^version.plist$</key>'
+    - '    <true/>'
+    - '  </dict>'
+    - '  <key>rules2</key>'
+    - '  <dict>'
+    - '    <key>.*/.dSYM($|/)</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>11</real>'
+    - '    </dict>'
+    - '    <key>^(.*/)?/.DS_Store$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>2000</real>'
+    - '    </dict>'
+    - '    <key>^(Frameworks|SharedFrameworks|PlugIns|Plug-ins|XPCServices|Helpers|MacOS|Library/(Automator|Spotlight|LoginItems))/</key>'
+    - '    <dict>'
+    - '      <key>nested</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>10</real>'
+    - '    </dict>'
+    - '    <key>^.*</key>'
+    - '    <true/>'
+    - '    <key>^Info/.plist$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^PkgInfo$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^Resources/</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^Resources/.*/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>optional</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1000</real>'
+    - '    </dict>'
+    - '    <key>^Resources/.*/.lproj/locversion.plist$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1100</real>'
+    - '    </dict>'
+    - '    <key>^Resources/Base/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>1010</real>'
+    - '    </dict>'
+    - '    <key>^[^/]+$</key>'
+    - '    <dict>'
+    - '      <key>nested</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>10</real>'
+    - '    </dict>'
+    - '    <key>^embedded/.provisionprofile$</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^version/.plist$</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '  </dict>'
+    - </dict>
+    - </plist>
+    - ''
+- path: Contents/Frameworks/Sparkle.framework/Versions/A/Resources/DarkAqua.css
+  file_size: 0
+  file_sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+  entity: other
+- path: Contents/Frameworks/Sparkle.framework/Versions/A/Resources/Info.plist
+  file_size: 582
+  file_sha256: fc10a69db39ae97327678df5b093982db866a9a478a77a84e8c47f6333170bdf
+  entity: other
+- path: Contents/Frameworks/Sparkle.framework/Versions/A/Resources/en.lproj/Sparkle.strings
+  file_size: 0
+  file_sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+  entity: other
+- path: Contents/Frameworks/Sparkle.framework/Versions/A/Sparkle
+  file_size: 22544
+  file_sha256: 9f41a07525f12e42afbe04eca9d3f157fe2ae2a5c774416872b6e3c0ad7459ea
+  entity:
+    mach_o:
+      macho_linkedit_start_offset: 16384 / 0x4000
+      macho_signature_start_offset: 16400 / 0x4010
+      macho_signature_end_offset: 16821 / 0x41b5
+      macho_linkedit_end_offset: 22544 / 0x5810
+      macho_end_offset: 22544 / 0x5810
+      linkedit_signature_start_offset: 16 / 0x10
+      linkedit_signature_end_offset: 437 / 0x1b5
+      linkedit_bytes_after_signature: 5723 / 0x165b
+      signature:
+        superblob_length: 421 / 0x1a5
+        blob_count: 3
+        blobs:
+        - slot: CodeDirectory (0)
+          magic: fade0c02
+          length: 365
+          sha1: 0c78ab52c9ca52cb69b6c81f2a64984909089c66
+          sha256: 17c791e1d0abc8bb1231f600176aa39b31dfae66315908007e54997f01b426cb
+        - slot: RequirementSet (2)
+          magic: fade0c01
+          length: 12
+          sha1: 3a75f6db058529148e14dd7ea1b4729cc09ec973
+          sha256: 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986
+        - slot: CMS Signature (65536)
+          magic: fade0b01
+          length: 8
+          sha1: 2a7254313aa41796079bb0e9d0f044345f69f98b
+          sha256: e6c83bc98a10348492c7d4d2378a54572ef29e1a5692ccd02b5e29f4b762d6a0
+        code_directory:
+          version: '0x20400'
+          flags: CodeSignatureFlags(ADHOC)
+          identifier: com.example.mybundle
+          digest_type: sha256
+          platform: 0
+          signed_entity_size: 16400
+          executable_segment_flags: ExecutableSegmentFlags(0x0)
+          code_digests_count: 5
+          slot_digests:
+          - 'Info (1): fc10a69db39ae97327678df5b093982db866a9a478a77a84e8c47f6333170bdf'
+          - 'RequirementSet (2): 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986'
+          - 'Resources (3): e8441b0a5cdcdcea855a05a20135d82d60dc44246219e1a1b16d3c5b839534cf'
+        cms: null
+- path: Contents/Frameworks/Sparkle.framework/Versions/A/_CodeSignature/CodeResources
+  file_size: 4311
+  file_sha256: e8441b0a5cdcdcea855a05a20135d82d60dc44246219e1a1b16d3c5b839534cf
+  entity:
+    bundle_code_signature_file: !ResourcesXml
+    - <?xml version="1.0" encoding="UTF-8"?>
+    - <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+    - <plist version="1.0">
+    - <dict>
+    - '  <key>files</key>'
+    - '  <dict>'
+    - '    <key>Resources/Autoupdate.app/Contents/Info.plist</key>'
+    - '    <data>'
+    - '    JfaPHt3iYsKzZnh6nfeTIpJWVqE='
+    - '    </data>'
+    - '    <key>Resources/Autoupdate.app/Contents/MacOS/Autoupdate</key>'
+    - '    <data>'
+    - '    apwGEW+W2ghwpHtZD2rJ1FcX9d8='
+    - '    </data>'
+    - '    <key>Resources/Autoupdate.app/Contents/Resources/en.lproj/Sparkle.strings</key>'
+    - '    <dict>'
+    - '      <key>hash</key>'
+    - '      <data>'
+    - '      2jmj7l5rSw0yVb/vlWAYkK/YBwk='
+    - '      </data>'
+    - '      <key>optional</key>'
+    - '      <true/>'
+    - '    </dict>'
+    - '    <key>Resources/DarkAqua.css</key>'
+    - '    <data>'
+    - '    2jmj7l5rSw0yVb/vlWAYkK/YBwk='
+    - '    </data>'
+    - '    <key>Resources/Info.plist</key>'
+    - '    <data>'
+    - '    lv+5FkNAh6bulcE7JEu8aWkDqmI='
+    - '    </data>'
+    - '    <key>Resources/en.lproj/Sparkle.strings</key>'
+    - '    <dict>'
+    - '      <key>hash</key>'
+    - '      <data>'
+    - '      2jmj7l5rSw0yVb/vlWAYkK/YBwk='
+    - '      </data>'
+    - '      <key>optional</key>'
+    - '      <true/>'
+    - '    </dict>'
+    - '  </dict>'
+    - '  <key>files2</key>'
+    - '  <dict>'
+    - '    <key>Headers/Sparkle.h</key>'
+    - '    <dict>'
+    - '      <key>hash2</key>'
+    - '      <data>'
+    - '      47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU='
+    - '      </data>'
+    - '    </dict>'
+    - '    <key>Modules/module.modulemap</key>'
+    - '    <dict>'
+    - '      <key>hash2</key>'
+    - '      <data>'
+    - '      47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU='
+    - '      </data>'
+    - '    </dict>'
+    - '    <key>Resources/Autoupdate.app/Contents/Info.plist</key>'
+    - '    <dict>'
+    - '      <key>hash2</key>'
+    - '      <data>'
+    - '      QdiMFekjvajCJW2eyTSz3VPvQ9sGv3PNto/CXv93t44='
+    - '      </data>'
+    - '    </dict>'
+    - '    <key>Resources/Autoupdate.app/Contents/MacOS/Autoupdate</key>'
+    - '    <dict>'
+    - '      <key>hash2</key>'
+    - '      <data>'
+    - '      zLblAJX5W3ukRyRnP//XAljD74buS0LF91Q/kYXvHv4='
+    - '      </data>'
+    - '    </dict>'
+    - '    <key>Resources/Autoupdate.app/Contents/Resources/en.lproj/Sparkle.strings</key>'
+    - '    <dict>'
+    - '      <key>hash2</key>'
+    - '      <data>'
+    - '      47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU='
+    - '      </data>'
+    - '      <key>optional</key>'
+    - '      <true/>'
+    - '    </dict>'
+    - '    <key>Resources/DarkAqua.css</key>'
+    - '    <dict>'
+    - '      <key>hash2</key>'
+    - '      <data>'
+    - '      47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU='
+    - '      </data>'
+    - '    </dict>'
+    - '    <key>Resources/Info.plist</key>'
+    - '    <dict>'
+    - '      <key>hash2</key>'
+    - '      <data>'
+    - '      /BCmnbOa6XMnZ431sJOYLbhmqaR4p3qE6MR/YzMXC98='
+    - '      </data>'
+    - '    </dict>'
+    - '    <key>Resources/en.lproj/Sparkle.strings</key>'
+    - '    <dict>'
+    - '      <key>hash2</key>'
+    - '      <data>'
+    - '      47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU='
+    - '      </data>'
+    - '      <key>optional</key>'
+    - '      <true/>'
+    - '    </dict>'
+    - '  </dict>'
+    - '  <key>rules</key>'
+    - '  <dict>'
+    - '    <key>^Resources/</key>'
+    - '    <true/>'
+    - '    <key>^Resources/.*/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>optional</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1000</real>'
+    - '    </dict>'
+    - '    <key>^Resources/.*/.lproj/locversion.plist$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1100</real>'
+    - '    </dict>'
+    - '    <key>^Resources/Base/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>1010</real>'
+    - '    </dict>'
+    - '    <key>^version.plist$</key>'
+    - '    <true/>'
+    - '  </dict>'
+    - '  <key>rules2</key>'
+    - '  <dict>'
+    - '    <key>.*/.dSYM($|/)</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>11</real>'
+    - '    </dict>'
+    - '    <key>^(.*/)?/.DS_Store$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>2000</real>'
+    - '    </dict>'
+    - '    <key>^(Frameworks|SharedFrameworks|PlugIns|Plug-ins|XPCServices|Helpers|MacOS|Library/(Automator|Spotlight|LoginItems))/</key>'
+    - '    <dict>'
+    - '      <key>nested</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>10</real>'
+    - '    </dict>'
+    - '    <key>^.*</key>'
+    - '    <true/>'
+    - '    <key>^Info/.plist$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^PkgInfo$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^Resources/</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^Resources/.*/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>optional</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1000</real>'
+    - '    </dict>'
+    - '    <key>^Resources/.*/.lproj/locversion.plist$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1100</real>'
+    - '    </dict>'
+    - '    <key>^Resources/Base/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>1010</real>'
+    - '    </dict>'
+    - '    <key>^[^/]+$</key>'
+    - '    <dict>'
+    - '      <key>nested</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>10</real>'
+    - '    </dict>'
+    - '    <key>^embedded/.provisionprofile$</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^version/.plist$</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '  </dict>'
+    - </dict>
+    - </plist>
+    - ''
+- path: Contents/Frameworks/Sparkle.framework/Versions/Current
+  symlink_target: A
+  entity: other
+- path: Contents/Info.plist
+  file_size: 576
+  file_sha256: 0a5902dc8e47f490d03889d3593d17bddbf79e6c1f79494e20dd28f9459effa5
+  entity: other
+- path: Contents/MacOS/MyApp
+  file_size: 22544
+  file_sha256: 90d4920250fbddd56eb3716aa3caf27de25466c2455d7234ee15821f7ce7f088
+  entity:
+    mach_o:
+      macho_linkedit_start_offset: 16384 / 0x4000
+      macho_signature_start_offset: 16400 / 0x4010
+      macho_signature_end_offset: 16821 / 0x41b5
+      macho_linkedit_end_offset: 22544 / 0x5810
+      macho_end_offset: 22544 / 0x5810
+      linkedit_signature_start_offset: 16 / 0x10
+      linkedit_signature_end_offset: 437 / 0x1b5
+      linkedit_bytes_after_signature: 5723 / 0x165b
+      signature:
+        superblob_length: 421 / 0x1a5
+        blob_count: 3
+        blobs:
+        - slot: CodeDirectory (0)
+          magic: fade0c02
+          length: 365
+          sha1: 2ffbdce9b026e11a2fbc88fbb20c096b701faa0c
+          sha256: 37579b3141daaa06faf53f95ed30d98c913734fd776455d15c96e28bea43b594
+        - slot: RequirementSet (2)
+          magic: fade0c01
+          length: 12
+          sha1: 3a75f6db058529148e14dd7ea1b4729cc09ec973
+          sha256: 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986
+        - slot: CMS Signature (65536)
+          magic: fade0b01
+          length: 8
+          sha1: 2a7254313aa41796079bb0e9d0f044345f69f98b
+          sha256: e6c83bc98a10348492c7d4d2378a54572ef29e1a5692ccd02b5e29f4b762d6a0
+        code_directory:
+          version: '0x20400'
+          flags: CodeSignatureFlags(ADHOC)
+          identifier: com.example.mybundle
+          digest_type: sha256
+          platform: 0
+          signed_entity_size: 16400
+          executable_segment_flags: ExecutableSegmentFlags(MAIN_BINARY)
+          code_digests_count: 5
+          slot_digests:
+          - 'Info (1): 0a5902dc8e47f490d03889d3593d17bddbf79e6c1f79494e20dd28f9459effa5'
+          - 'RequirementSet (2): 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986'
+          - 'Resources (3): 4f5c3a58e8cdc1d972ba455220cf05e1e579afc3a157bd2a9c50bdfd31433873'
+        cms: null
+- path: Contents/Resources/AppIcon.icns
+  file_size: 0
+  file_sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+  entity: other
+- path: Contents/_CodeSignature/CodeResources
+  file_size: 2678
+  file_sha256: 4f5c3a58e8cdc1d972ba455220cf05e1e579afc3a157bd2a9c50bdfd31433873
+  entity:
+    bundle_code_signature_file: !ResourcesXml
+    - <?xml version="1.0" encoding="UTF-8"?>
+    - <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+    - <plist version="1.0">
+    - <dict>
+    - '  <key>files</key>'
+    - '  <dict>'
+    - '    <key>Resources/AppIcon.icns</key>'
+    - '    <data>'
+    - '    2jmj7l5rSw0yVb/vlWAYkK/YBwk='
+    - '    </data>'
+    - '  </dict>'
+    - '  <key>files2</key>'
+    - '  <dict>'
+    - '    <key>Frameworks/Sparkle.framework</key>'
+    - '    <dict>'
+    - '      <key>cdhash</key>'
+    - '      <data>'
+    - '      F8eR4dCryLsSMfYAF2qjmzHfrmY='
+    - '      </data>'
+    - '      <key>requirement</key>'
+    - '      <string>cdhash H"17c791e1d0abc8bb1231f600176aa39b31dfae66"</string>'
+    - '    </dict>'
+    - '    <key>Resources/AppIcon.icns</key>'
+    - '    <dict>'
+    - '      <key>hash2</key>'
+    - '      <data>'
+    - '      47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU='
+    - '      </data>'
+    - '    </dict>'
+    - '  </dict>'
+    - '  <key>rules</key>'
+    - '  <dict>'
+    - '    <key>^Resources/</key>'
+    - '    <true/>'
+    - '    <key>^Resources/.*/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>optional</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1000</real>'
+    - '    </dict>'
+    - '    <key>^Resources/.*/.lproj/locversion.plist$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1100</real>'
+    - '    </dict>'
+    - '    <key>^Resources/Base/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>1010</real>'
+    - '    </dict>'
+    - '    <key>^version.plist$</key>'
+    - '    <true/>'
+    - '  </dict>'
+    - '  <key>rules2</key>'
+    - '  <dict>'
+    - '    <key>.*/.dSYM($|/)</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>11</real>'
+    - '    </dict>'
+    - '    <key>^(.*/)?/.DS_Store$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>2000</real>'
+    - '    </dict>'
+    - '    <key>^(Frameworks|SharedFrameworks|PlugIns|Plug-ins|XPCServices|Helpers|MacOS|Library/(Automator|Spotlight|LoginItems))/</key>'
+    - '    <dict>'
+    - '      <key>nested</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>10</real>'
+    - '    </dict>'
+    - '    <key>^.*</key>'
+    - '    <true/>'
+    - '    <key>^Info/.plist$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^PkgInfo$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^Resources/</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^Resources/.*/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>optional</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1000</real>'
+    - '    </dict>'
+    - '    <key>^Resources/.*/.lproj/locversion.plist$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1100</real>'
+    - '    </dict>'
+    - '    <key>^Resources/Base/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>1010</real>'
+    - '    </dict>'
+    - '    <key>^[^/]+$</key>'
+    - '    <dict>'
+    - '      <key>nested</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>10</real>'
+    - '    </dict>'
+    - '    <key>^embedded/.provisionprofile$</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^version/.plist$</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '  </dict>'
+    - </dict>
+    - </plist>
+    - ''
+
+$ rcodesign sign --shallow MyApp.app MyApp.app.signed-shallow
+? 1
+signing MyApp.app to MyApp.app.signed-shallow
+signing bundle at MyApp.app
+3 nested bundles will be copied instead of signed because shallow signing enabled:
+Contents/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app
+Contents/Frameworks/Sparkle.framework/Versions/A
+Contents/Frameworks/Sparkle.framework
+entering nested bundle Contents/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app
+shallow signing enabled; bundle will be copied instead of signed
+leaving nested bundle Contents/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app
+entering nested bundle Contents/Frameworks/Sparkle.framework/Versions/A
+shallow signing enabled; bundle will be copied instead of signed
+leaving nested bundle Contents/Frameworks/Sparkle.framework/Versions/A
+entering nested bundle Contents/Frameworks/Sparkle.framework
+shallow signing enabled; bundle will be copied instead of signed
+leaving nested bundle Contents/Frameworks/Sparkle.framework
+signing bundle at MyApp.app into MyApp.app.signed-shallow
+Error: binary does not have code signature data
+
+$ rcodesign sign --shallow MyApp.app.signed MyApp.app.signed-shallow
+signing MyApp.app.signed to MyApp.app.signed-shallow
+signing bundle at MyApp.app.signed
+3 nested bundles will be copied instead of signed because shallow signing enabled:
+Contents/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app
+Contents/Frameworks/Sparkle.framework/Versions/A
+Contents/Frameworks/Sparkle.framework
+entering nested bundle Contents/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app
+shallow signing enabled; bundle will be copied instead of signed
+leaving nested bundle Contents/Frameworks/Sparkle.framework/Versions/A/Resources/Autoupdate.app
+entering nested bundle Contents/Frameworks/Sparkle.framework/Versions/A
+shallow signing enabled; bundle will be copied instead of signed
+leaving nested bundle Contents/Frameworks/Sparkle.framework/Versions/A
+entering nested bundle Contents/Frameworks/Sparkle.framework
+shallow signing enabled; bundle will be copied instead of signed
+leaving nested bundle Contents/Frameworks/Sparkle.framework
+signing bundle at MyApp.app.signed into MyApp.app.signed-shallow
+signing main executable Contents/MacOS/MyApp
+
+```

@@ -74,3 +74,6 @@ reqwest = { version = "0.13", default-features = false, features = [
 chrono = { version = "0.4", default-features = false, features = ["std", "serde"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1" }
+
+[patch.crates-io]
+apple-codesign = { path = "3rdparty/apple-codesign-0.29.0" }

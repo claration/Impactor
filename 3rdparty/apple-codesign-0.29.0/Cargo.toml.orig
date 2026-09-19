@@ -1,0 +1,131 @@
+[package]
+name = "apple-codesign"
+version = "0.29.0"
+authors = ["Gregory Szorc <gregory.szorc@gmail.com>"]
+edition = "2021"
+rust-version = "1.81"
+license = "MPL-2.0"
+description = "Pure Rust interface to code signing on Apple platforms"
+keywords = ["apple", "macos", "codesign"]
+homepage = "https://github.com/indygreg/apple-platform-rs"
+repository = "https://github.com/indygreg/apple-platform-rs.git"
+readme = "README.md"
+
+[[bin]]
+name = "rcodesign"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1.0.93"
+aws-config = { version = "1.5.10", optional = true }
+aws-sdk-s3 = { version = "1.63.0", optional = true }
+aws-smithy-http = { version = "0.60.11", optional = true }
+aws-smithy-types = { version = "1.2.9", optional = true }
+base64 = "0.22.1"
+bcder = "0.7.4"
+bitflags = "2.6.0"
+bytes = "1.9.0"
+clap = { version = "4.5.21", features = ["derive"] }
+chrono = "0.4.38"
+cryptographic-message-syntax = "0.27.0"
+der = { version = "0.7.9", features = ["alloc"] }
+dialoguer = "0.11.0"
+difference = "2.0.0"
+digest = "0.10.7"
+dirs = "5.0.1"
+elliptic-curve = { version = "0.13.8", features = ["arithmetic", "pkcs8"] }
+env_logger = "0.11.5"
+figment = { version = "0.10.19", features = ["env", "toml"] }
+filetime = "0.2.25"
+glob = "0.3.1"
+goblin = "0.9.2"
+hex = "0.4.3"
+log = "0.4.22"
+md-5 = "0.10.6"
+minicbor = { version = "0.25.1", features = ["derive", "std"] }
+num-traits = "0.2.19"
+object = { version = "0.36.5", features = ["write"] }
+oid-registry = "0.7.1"
+once_cell = "1.20.2"
+p12 = "0.6.3"
+p256 = { version = "0.13.2", default-features = false, features = ["arithmetic", "pkcs8", "std"] }
+pem = "3.0.4"
+pkcs1 = { version = "0.7.5", features = ["alloc", "std", "pkcs8"] }
+pkcs8 = { version = "0.10.2", features = ["alloc", "std"] }
+plist = "1.7.0"
+rand = "0.8.5"
+rasn = "0.20.2"
+rayon = "1.10.0"
+regex = "1.11.1"
+reqwest = { version = "0.12.9", default-features = false, features = ["blocking", "http2", "json", "rustls-tls-native-roots"] }
+ring = "0.17.8"
+rsa = "0.9.7"
+scroll = "0.12.0"
+sha2 = "0.10.8"
+semver = "1.0.23"
+serde = { version = "1.0.215", features = ["derive"] }
+serde_json = "1.0.133"
+serde_yaml = "0.9.34"
+signature = { version = "2.2.0", features = ["std"] }
+simple-file-manifest = "0.11.0"
+spake2 = "0.4.0"
+spki = { version = "0.7.3", features = ["pem"] }
+subtle = "2.6.1"
+tempfile = "3.14.0"
+thiserror = "2.0.3"
+tokio = { version = "1.41.1", features = ["rt"] }
+tungstenite = { version = "0.24.0", features = ["rustls-tls-native-roots"] }
+uuid = { version = "1.11.0", features = ["v4"] }
+walkdir = "2.5.0"
+x509 = "0.2.0"
+x509-certificate = "0.24.0"
+xml-rs = "0.8.23"
+yasna = "0.5.2"
+yubikey = { version = "0.8.0", optional = true, features = ["untested"] }
+zeroize = { version = "1.8.1", features = ["zeroize_derive"] }
+zip = { version = "2.2.1", default-features = false, features = ["deflate"] }
+zip_structs = "0.2.1"
+
+[dependencies.app-store-connect]
+path = "../app-store-connect"
+version = "0.7.0"
+optional = true
+
+[dependencies.apple-bundles]
+path = "../apple-bundles"
+version = "0.21.0"
+
+[dependencies.apple-flat-package]
+path = "../apple-flat-package"
+version = "0.20.0"
+
+[dependencies.apple-xar]
+path = "../apple-xar"
+version = "0.20.0"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+security-framework = { version = "2.11.1", features = ["OSX_10_12"] }
+security-framework-sys = { version = "2.12.1", features = ["OSX_10_12"] }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+widestring = { version = "1.1.0" }
+windows-sys = { version = "0.59.0", features = ["Win32_Foundation", "Win32_Security_Cryptography"] }
+
+[dev-dependencies]
+flate2 = "1.0.35"
+indoc = "2.0.5"
+simple-file-manifest = "0.11.0"
+tar = "0.4.43"
+trycmd-indygreg-fork = "0.14.20"
+zip = { version = "2.2.1", default-features = false }
+
+[features]
+default = ["notarize"]
+notarize = [
+    "app-store-connect",
+    "aws-config",
+    "aws-sdk-s3",
+    "aws-smithy-http",
+    "aws-smithy-types",
+]
+smartcard = ["yubikey"]

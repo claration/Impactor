@@ -1,0 +1,66 @@
+```
+$ rcodesign debug-create-macho exe
+assuming default minimum version 11.0.0
+writing Mach-O to exe
+
+$ rcodesign debug-create-info-plist --bundle-name MyApp Info.plist
+writing Info.plist
+
+$ rcodesign sign --info-plist-path Info.plist exe exe.signed
+signing exe to exe.signed
+signing exe as a Mach-O binary
+setting binary identifier to exe
+parsing Mach-O
+writing Mach-O to exe.signed
+
+$ rcodesign print-signature-info exe.signed
+- path: exe.signed
+  file_size: 22544
+  file_sha256: a060c6c3b1bd72a2d0a8aca5e21d5a91ed7ecbcfdc7d0201a87ef53ed1a74077
+  entity:
+    mach_o:
+      macho_linkedit_start_offset: 16384 / 0x4000
+      macho_signature_start_offset: 16400 / 0x4010
+      macho_signature_end_offset: 16772 / 0x4184
+      macho_linkedit_end_offset: 22544 / 0x5810
+      macho_end_offset: 22544 / 0x5810
+      linkedit_signature_start_offset: 16 / 0x10
+      linkedit_signature_end_offset: 388 / 0x184
+      linkedit_bytes_after_signature: 5772 / 0x168c
+      signature:
+        superblob_length: 372 / 0x174
+        blob_count: 3
+        blobs:
+        - slot: CodeDirectory (0)
+          magic: fade0c02
+          length: 316
+          sha1: 7f41a89c7645b669df41150feae14a688103d27f
+          sha256: af781f6cf2fe6b3460d436deaf800f0481ae67eaae1681a419fc7e9657da69a4
+        - slot: RequirementSet (2)
+          magic: fade0c01
+          length: 12
+          sha1: 3a75f6db058529148e14dd7ea1b4729cc09ec973
+          sha256: 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986
+        - slot: CMS Signature (65536)
+          magic: fade0b01
+          length: 8
+          sha1: 2a7254313aa41796079bb0e9d0f044345f69f98b
+          sha256: e6c83bc98a10348492c7d4d2378a54572ef29e1a5692ccd02b5e29f4b762d6a0
+        code_directory:
+          version: '0x20400'
+          flags: CodeSignatureFlags(ADHOC)
+          identifier: exe
+          digest_type: sha256
+          platform: 0
+          signed_entity_size: 16400
+          executable_segment_flags: ExecutableSegmentFlags(MAIN_BINARY)
+          code_digests_count: 5
+          slot_digests:
+          - 'Info (1): 0a5902dc8e47f490d03889d3593d17bddbf79e6c1f79494e20dd28f9459effa5'
+          - 'RequirementSet (2): 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986'
+        cms: null
+
+$ hashsum --sha256 --text Info.plist
+0a5902dc8e47f490d03889d3593d17bddbf79e6c1f79494e20dd28f9459effa5  Info.plist
+
+```

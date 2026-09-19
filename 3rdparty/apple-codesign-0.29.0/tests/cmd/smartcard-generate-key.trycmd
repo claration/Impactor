@@ -1,0 +1,43 @@
+```
+$ rcodesign help smartcard-generate-key
+Generate a new private key on a smartcard
+
+Usage: rcodesign[EXE] smartcard-generate-key [OPTIONS] --smartcard-slot <SMARTCARD_SLOT>
+
+Options:
+  -C, --config-file <CONFIG_PATH>
+          Explicit configuration file to load.
+          
+          If provided, the default configuration files are not loaded, even if they exist.
+          
+          Can be specified multiple times. Files are loaded/merged in the order given.
+          
+          The special value `/dev/null` can be used to specify an empty/null config file. It can be used to short-circuit loading of default config files.
+
+      --smartcard-slot <SMARTCARD_SLOT>
+          Smartcard slot number to store key in (9c is common)
+
+  -P, --profile <PROFILE>
+          Configuration profile to load.
+          
+          If not specified, the implicit "default" profile is loaded.
+
+      --touch-policy <TOUCH_POLICY>
+          Smartcard touch policy to protect key access
+          
+          [default: default]
+          [possible values: default, always, never, cached]
+
+      --pin-policy <PIN_POLICY>
+          Smartcard pin prompt policy to protect key access
+          
+          [default: default]
+          [possible values: default, never, once, always]
+
+  -v, --verbose...
+          Increase logging verbosity. Can be specified multiple times
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+```

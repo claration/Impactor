@@ -1,0 +1,815 @@
+```
+$ rcodesign debug-create-macho exe
+assuming default minimum version 11.0.0
+writing Mach-O to exe
+
+$ rcodesign sign --pem-source src/testdata/self-signed-rsa-apple-development.pem --signing-time 2023-11-05T10:00:00Z --timestamp-url none exe exe.apple-development
+reading PEM data from src/testdata/self-signed-rsa-apple-development.pem
+registering signing key
+signing exe to exe.apple-development
+signing exe as a Mach-O binary
+setting binary identifier to exe
+parsing Mach-O
+creating cryptographic signature with certificate Apple Development: RSA Apple Development (test)
+writing Mach-O to exe.apple-development
+
+$ rcodesign extract cms-info exe.apple-development
+signed content (embedded): None
+signed content (external): Some("fade0c020000013c00020400000000000000009c000000580000000200000005000040102002000c")... (316 bytes)
+signed content SHA-1:   e1c19ec9ec8c13b3940f8385a8f5f9b56309330a
+signed content SHA-256: fbd3393f2015c87653f2ccef69a864fb60985e21d38485b3bb1c7deeb76d825c
+signed content SHA-384: 25a7989a6cb024c4d037cd56f0bcfcea0ba4b178362dc4d1694a2080e47d7c63bb178b5a85dfddc9bedf8764ac8d380a
+signed content SHA-512: 16db5b4b1ea0529186a760790ce2d2325ea31f3d009eb74a182beb97ac26617e5495bf638d4b79746eee8f469aa991ba3a341af41b46d3b8d59079cf6d376950
+certificate count: 1
+certificate #0: subject CN=Apple Development: RSA Apple Development (test); self signed=true
+signer count: 1
+signer #0: digest algorithm: Sha256
+signer #0: signature algorithm: RsaSha256
+signer #0: content type: 1.2.840.113549.1.7.1
+signer #0: message digest: fbd3393f2015c87653f2ccef69a864fb60985e21d38485b3bb1c7deeb76d825c
+signer #0: signing time: Some(2023-11-05T10:00:00Z)
+signer #0: signature content SHA-1:   fc8004e694122f8e134b5e39380392165732f648
+signer #0: signature content SHA-256: c07c8319b33e4410d2f6b06ad5344aebbd7a848894f9c5004057cbbe8e17474d
+signer #0: signature content SHA-384: 8b53dc40ee48b34eee4c4ba0c2d0fe411929ef4f80e9dbc167cf96c6ef4abd8d633affefffdca0ef6eadc0a055c31827
+signer #0: signature content SHA-512: f4cf4a8f0e4de256e07bbfedff1455d50ae05cdbd2d3fec3a12bbc055a1e77d7746b8f1b2bf55fc6380164fda04e1d12d3fd03085b5842f6fb7c5a00348eec84
+signer #0: signature valid: true
+signer #0: time-stamp token present: false
+
+$ rcodesign extract cms exe.apple-development
+SignedData {
+    digest_algorithms: {
+        Sha256,
+    },
+    signed_content: None,
+    certificates: Some(
+        [
+            CapturedX509Certificate {
+                original: Ber(308203f7308202dfa003020102020101300d06092a864886f70d01010b050030818c31143012060a0992268993f22c6401010c04746573743138303606035504030c2f4170706c6520446576656c6f706d656e743a20525341204170706c6520446576656c6f706d656e7420287465737429310d300b060355040b0c0474657374311e301c060355040a0c15525341204170706c6520446576656c6f706d656e74310b3009060355040613025553301e170d3233313130373130343932385a170d3337303731363130343932385a30818c31143012060a0992268993f22c6401010c04746573743138303606035504030c2f4170706c6520446576656c6f706d656e743a20525341204170706c6520446576656c6f706d656e7420287465737429310d300b060355040b0c0474657374311e301c060355040a0c15525341204170706c6520446576656c6f706d656e74310b300906035504061302555330820122300d06092a864886f70d01010105000382010f003082010a0282010100e6c9e2a15c321fbad0442e10bebb9824c6319fdaa7afd7c227bda4a81e152b9728855a375e34249f85f4127207a658bc091b447bb499f1f0884eecc98187630200f24c4d08e557624c33a4021ab5528581a92b902b4d436c3033cc27f67242f3eff171ed62f316fc0f138eb927e8d0568aecf11fc519487608509037e1382d81998c12f7b5913dd14bf9c26880bcc270c46b872023f83bdd1ba2395b34d6873ca5ff703dffbce5f561b55361a5a3bd01bfeda19f20b1a6bc89aadffb643d3e8faf2329609e11a587732f85405102de6a2cd76c2f95c95e22dd7af7ae9b8f238d2c60abad0595b3fa9c96b52e9ab95ef7af4596112de6fa5862aebc7aa24fe1fb0203010001a3623060300c0603551d130101ff0402300030160603551d250101ff040c300a06082b06010505070303300e0603551d0f0101ff0404030207803013060a2a864886f763640601020101ff040205003013060a2a864886f7636406010c0101ff04020500300d06092a864886f70d01010b0500038201010099563303c646c61728b9758f16c559e6e1be2eae0884c8535834062b81f21c89a94c89c0ffb25b93b886535749d81e94440f6d257438e07cc701a7e69aa8bdeca71c3d2f686357f842c62a27b045c671b487d89fd3e69458aae19d69274e7b2d54f7f736e25196738185cab05ccd71b4d8a180610e1f771cfeee0198047692ec87fd3a4dbac1db4ff8205ddd7445d6184b11e3ca7018d6a495fa4b44bc1325fdd68050b45dddadf3a9a9ea0575a5b6d7a9d636f052f3b3d79729bf475efc9c95db4154f14d2ae598cb0debd424e0f0bfe59f11668f1e80e52412ae3f722bab026439addcf9a07b81cd17dec724afa51128e092038203c137f602cb154397c05a),
+                inner: X509Certificate(
+                    Certificate {
+                        tbs_certificate: TbsCertificate {
+                            version: Some(
+                                V3,
+                            ),
+                            serial_number: Integer(
+                                b"/x01",
+                            ),
+                            signature: AlgorithmIdentifier {
+                                algorithm: 1.2.840.113549.1.1.11,
+                                parameters: Some(
+                                    AlgorithmParameter(
+                                        [ 05 00 ],
+                                    ),
+                                ),
+                            },
+                            issuer: RdnSequence(
+                                RdnSequence(
+                                    [
+                                        RelativeDistinguishedName(
+                                            [
+                                                AttributeTypeAndValue {
+                                                    type: 0.9.2342.19200300.100.1.1,
+                                                    value: 0c0474657374,
+                                                },
+                                            ],
+                                        ),
+                                        RelativeDistinguishedName(
+                                            [
+                                                AttributeTypeAndValue {
+                                                    type: 2.5.4.3,
+                                                    value: 0c2f4170706c6520446576656c6f706d656e743a20525341204170706c6520446576656c6f706d656e7420287465737429,
+                                                },
+                                            ],
+                                        ),
+                                        RelativeDistinguishedName(
+                                            [
+                                                AttributeTypeAndValue {
+                                                    type: 2.5.4.11,
+                                                    value: 0c0474657374,
+                                                },
+                                            ],
+                                        ),
+                                        RelativeDistinguishedName(
+                                            [
+                                                AttributeTypeAndValue {
+                                                    type: 2.5.4.10,
+                                                    value: 0c15525341204170706c6520446576656c6f706d656e74,
+                                                },
+                                            ],
+                                        ),
+                                        RelativeDistinguishedName(
+                                            [
+                                                AttributeTypeAndValue {
+                                                    type: 2.5.4.6,
+                                                    value: 13025553,
+                                                },
+                                            ],
+                                        ),
+                                    ],
+                                ),
+                            ),
+                            validity: Validity {
+                                not_before: UtcTime(
+                                    UtcTime(
+                                        2023-11-07T10:49:28Z,
+                                    ),
+                                ),
+                                not_after: UtcTime(
+                                    UtcTime(
+                                        2037-07-16T10:49:28Z,
+                                    ),
+                                ),
+                            },
+                            subject: RdnSequence(
+                                RdnSequence(
+                                    [
+                                        RelativeDistinguishedName(
+                                            [
+                                                AttributeTypeAndValue {
+                                                    type: 0.9.2342.19200300.100.1.1,
+                                                    value: 0c0474657374,
+                                                },
+                                            ],
+                                        ),
+                                        RelativeDistinguishedName(
+                                            [
+                                                AttributeTypeAndValue {
+                                                    type: 2.5.4.3,
+                                                    value: 0c2f4170706c6520446576656c6f706d656e743a20525341204170706c6520446576656c6f706d656e7420287465737429,
+                                                },
+                                            ],
+                                        ),
+                                        RelativeDistinguishedName(
+                                            [
+                                                AttributeTypeAndValue {
+                                                    type: 2.5.4.11,
+                                                    value: 0c0474657374,
+                                                },
+                                            ],
+                                        ),
+                                        RelativeDistinguishedName(
+                                            [
+                                                AttributeTypeAndValue {
+                                                    type: 2.5.4.10,
+                                                    value: 0c15525341204170706c6520446576656c6f706d656e74,
+                                                },
+                                            ],
+                                        ),
+                                        RelativeDistinguishedName(
+                                            [
+                                                AttributeTypeAndValue {
+                                                    type: 2.5.4.6,
+                                                    value: 13025553,
+                                                },
+                                            ],
+                                        ),
+                                    ],
+                                ),
+                            ),
+                            subject_public_key_info: SubjectPublicKeyInfo {
+                                algorithm: AlgorithmIdentifier {
+                                    algorithm: 1.2.840.113549.1.1.1,
+                                    parameters: Some(
+                                        AlgorithmParameter(
+                                            [ 05 00 ],
+                                        ),
+                                    ),
+                                },
+                                subject_public_key: 3082010a0282010100e6c9e2a15c321fbad0442e10bebb9824c6319fdaa7afd7c227bda4a81e152b9728855a375e34249f85f4127207a658bc091b447bb499f1f0884eecc98187630200f24c4d08e557624c33a4021ab5528581a92b902b4d436c3033cc27f67242f3eff171ed62f316fc0f138eb927e8d0568aecf11fc519487608509037e1382d81998c12f7b5913dd14bf9c26880bcc270c46b872023f83bdd1ba2395b34d6873ca5ff703dffbce5f561b55361a5a3bd01bfeda19f20b1a6bc89aadffb643d3e8faf2329609e11a587732f85405102de6a2cd76c2f95c95e22dd7af7ae9b8f238d2c60abad0595b3fa9c96b52e9ab95ef7af4596112de6fa5862aebc7aa24fe1fb0203010001 (unused 0),
+                            },
+                            issuer_unique_id: None,
+                            subject_unique_id: None,
+                            extensions: Some(
+                                Extensions(
+                                    [
+                                        Extension {
+                                            id: 2.5.29.19,
+                                            critical: Some(
+                                                true,
+                                            ),
+                                            value: 3000,
+                                        },
+                                        Extension {
+                                            id: 2.5.29.37,
+                                            critical: Some(
+                                                true,
+                                            ),
+                                            value: 300a06082b06010505070303,
+                                        },
+                                        Extension {
+                                            id: 2.5.29.15,
+                                            critical: Some(
+                                                true,
+                                            ),
+                                            value: 03020780,
+                                        },
+                                        Extension {
+                                            id: 1.2.840.113635.100.6.1.2,
+                                            critical: Some(
+                                                true,
+                                            ),
+                                            value: 0500,
+                                        },
+                                        Extension {
+                                            id: 1.2.840.113635.100.6.1.12,
+                                            critical: Some(
+                                                true,
+                                            ),
+                                            value: 0500,
+                                        },
+                                    ],
+                                ),
+                            ),
+                            raw_data: Some("308202dfa003020102020101300d06092a864886f70d01010b050030818c31143012060a0992268993f22c6401010c04746573743138303606035504030c2f4170706c6520446576656c6f706d656e743a20525341204170706c6520446576656c6f706d656e7420287465737429310d300b060355040b0c0474657374311e301c060355040a0c15525341204170706c6520446576656c6f706d656e74310b3009060355040613025553301e170d3233313130373130343932385a170d3337303731363130343932385a30818c31143012060a0992268993f22c6401010c04746573743138303606035504030c2f4170706c6520446576656c6f706d656e743a20525341204170706c6520446576656c6f706d656e7420287465737429310d300b060355040b0c0474657374311e301c060355040a0c15525341204170706c6520446576656c6f706d656e74310b300906035504061302555330820122300d06092a864886f70d01010105000382010f003082010a0282010100e6c9e2a15c321fbad0442e10bebb9824c6319fdaa7afd7c227bda4a81e152b9728855a375e34249f85f4127207a658bc091b447bb499f1f0884eecc98187630200f24c4d08e557624c33a4021ab5528581a92b902b4d436c3033cc27f67242f3eff171ed62f316fc0f138eb927e8d0568aecf11fc519487608509037e1382d81998c12f7b5913dd14bf9c26880bcc270c46b872023f83bdd1ba2395b34d6873ca5ff703dffbce5f561b55361a5a3bd01bfeda19f20b1a6bc89aadffb643d3e8faf2329609e11a587732f85405102de6a2cd76c2f95c95e22dd7af7ae9b8f238d2c60abad0595b3fa9c96b52e9ab95ef7af4596112de6fa5862aebc7aa24fe1fb0203010001a3623060300c0603551d130101ff0402300030160603551d250101ff040c300a06082b06010505070303300e0603551d0f0101ff0404030207803013060a2a864886f763640601020101ff040205003013060a2a864886f7636406010c0101ff04020500"),
+                        },
+                        signature_algorithm: AlgorithmIdentifier {
+                            algorithm: 1.2.840.113549.1.1.11,
+                            parameters: Some(
+                                AlgorithmParameter(
+                                    [ 05 00 ],
+                                ),
+                            ),
+                        },
+                        signature: 99563303c646c61728b9758f16c559e6e1be2eae0884c8535834062b81f21c89a94c89c0ffb25b93b886535749d81e94440f6d257438e07cc701a7e69aa8bdeca71c3d2f686357f842c62a27b045c671b487d89fd3e69458aae19d69274e7b2d54f7f736e25196738185cab05ccd71b4d8a180610e1f771cfeee0198047692ec87fd3a4dbac1db4ff8205ddd7445d6184b11e3ca7018d6a495fa4b44bc1325fdd68050b45dddadf3a9a9ea0575a5b6d7a9d636f052f3b3d79729bf475efc9c95db4154f14d2ae598cb0debd424e0f0bfe59f11668f1e80e52412ae3f722bab026439addcf9a07b81cd17dec724afa51128e092038203c137f602cb154397c05a (unused 0),
+                    },
+                ),
+            },
+        ],
+    ),
+    signers: [
+        SignerInfo {
+            issuer: RdnSequence(
+                RdnSequence(
+                    [
+                        RelativeDistinguishedName(
+                            [
+                                AttributeTypeAndValue {
+                                    type: 0.9.2342.19200300.100.1.1,
+                                    value: 0c0474657374,
+                                },
+                            ],
+                        ),
+                        RelativeDistinguishedName(
+                            [
+                                AttributeTypeAndValue {
+                                    type: 2.5.4.3,
+                                    value: 0c2f4170706c6520446576656c6f706d656e743a20525341204170706c6520446576656c6f706d656e7420287465737429,
+                                },
+                            ],
+                        ),
+                        RelativeDistinguishedName(
+                            [
+                                AttributeTypeAndValue {
+                                    type: 2.5.4.11,
+                                    value: 0c0474657374,
+                                },
+                            ],
+                        ),
+                        RelativeDistinguishedName(
+                            [
+                                AttributeTypeAndValue {
+                                    type: 2.5.4.10,
+                                    value: 0c15525341204170706c6520446576656c6f706d656e74,
+                                },
+                            ],
+                        ),
+                        RelativeDistinguishedName(
+                            [
+                                AttributeTypeAndValue {
+                                    type: 2.5.4.6,
+                                    value: 13025553,
+                                },
+                            ],
+                        ),
+                    ],
+                ),
+            ),
+            serial_number: Integer(
+                b"/x01",
+            ),
+            digest_algorithm: Sha256,
+            signature_algorithm: RsaSha256,
+            signature: 427dab648570de5bb97d6660434a47057abd7fdbd2598419a96307c2e3b72f8dd3db12e4b540d3976ba30220c49a19ef82193d66b04cefdf5066ab49472b4c6b333cabf9c789167d04c25974b3ca2a3bf9d26a47cf575b209216fa3b6f7f849b026e168d248692db61f68ed974462423bcc69fe152b8db05c58b5b1dae0a6cde4c1f085c51ddba0621935ae4cc5fa764073a9681241dd03db9497844200749b31f1cb53345ab1c1626f4bc41c0171dd24178d14c66bc6392fc0cb1b7b8a27622af16bd52fdc54661939a07d49d0f9aebf833765fbaf4c2f8febc6741643ae4dc133ef35cf01eeb205b309d56ab240ae73ebf013ea80203b9c7dd613355c7585b,
+            signed_attributes: Some(
+                SignedAttributes {
+                    content_type: 1.2.840.113549.1.7.1,
+                    message_digest: fbd3393f2015c87653f2ccef69a864fb60985e21d38485b3bb1c7deeb76d825c,
+                    signing_time: Some(
+                        2023-11-05T10:00:00Z,
+                    ),
+                },
+            ),
+            digested_signed_attributes_data: Some("318201d4301806092a864886f70d010903310b06092a864886f70d010701301c06092a864886f70d010905310f170d3233313130353130303030305a302f06092a864886f70d01090431220420fbd3393f2015c87653f2ccef69a864fb60985e21d38485b3bb1c7deeb76d825c303c06092a864886f763640902312f302d06096086480165030402010420fbd3393f2015c87653f2ccef69a864fb60985e21d38485b3bb1c7deeb76d825c3082012906092a864886f7636409013182011a048201163c3f786d6c2076657273696f6e3d22312e302220656e636f64696e673d225554462d38223f3e0a3c21444f435459504520706c697374205055424c494320222d2f2f4170706c652f2f44544420504c49535420312e302f2f454e222022687474703a2f2f7777772e6170706c652e636f6d2f445444732f50726f70657274794c6973742d312e302e647464223e0a3c706c6973742076657273696f6e3d22312e30223e0a3c646963743e0a093c6b65793e63646861736865733c2f6b65793e0a093c61727261793e0a09093c646174613e0a09092b394d355079415679485a5438737a766161686b2b3243595869453d0a09093c2f646174613e0a093c2f61727261793e0a3c2f646963743e0a3c2f706c6973743e0a"),
+            unsigned_attributes: None,
+        },
+    ],
+}
+
+$ rcodesign print-signature-info exe.apple-development
+- path: exe.apple-development
+  file_size: 22544
+  file_sha256: b79b1797e7e4da470e94c4b4881e1a04dab26e515cf3ecdc69e31cb16f48812d
+  entity:
+    mach_o:
+      macho_linkedit_start_offset: 16384 / 0x4000
+      macho_signature_start_offset: 16400 / 0x4010
+      macho_signature_end_offset: 18841 / 0x4999
+      macho_linkedit_end_offset: 22544 / 0x5810
+      macho_end_offset: 22544 / 0x5810
+      linkedit_signature_start_offset: 16 / 0x10
+      linkedit_signature_end_offset: 2457 / 0x999
+      linkedit_bytes_after_signature: 3703 / 0xe77
+      signature:
+        superblob_length: 2441 / 0x989
+        blob_count: 3
+        blobs:
+        - slot: CodeDirectory (0)
+          magic: fade0c02
+          length: 316
+          sha1: e1c19ec9ec8c13b3940f8385a8f5f9b56309330a
+          sha256: fbd3393f2015c87653f2ccef69a864fb60985e21d38485b3bb1c7deeb76d825c
+        - slot: RequirementSet (2)
+          magic: fade0c01
+          length: 80
+          sha1: 4f9d3e687a7622d7209180eeca44e6a4c97a2187
+          sha256: f48f861e449222d508463e8342afee0c2241817878cab57b21e38e6aea0c08fa
+        - slot: CMS Signature (65536)
+          magic: fade0b01
+          length: 2009
+          sha1: faa96064b748df76d40c73c847cad6664772324c
+          sha256: f77bac63ecd33d9a152f4011d5cfefe695682e4dd15da5d89cdb9d8347350404
+        code_directory:
+          version: '0x20400'
+          flags: CodeSignatureFlags(0x0)
+          identifier: exe
+          digest_type: sha256
+          platform: 0
+          signed_entity_size: 16400
+          executable_segment_flags: ExecutableSegmentFlags(MAIN_BINARY)
+          code_digests_count: 5
+          slot_digests:
+          - 'Info (1): 0000000000000000000000000000000000000000000000000000000000000000'
+          - 'RequirementSet (2): f48f861e449222d508463e8342afee0c2241817878cab57b21e38e6aea0c08fa'
+        code_requirements:
+        - 'designated(3): 0: (identifier "exe") and (certificate root = H"e1c7216e46533c923b7cfc94e86c7043790b96e9");'
+        cms:
+          certificates:
+          - subject: 'CN=Apple Development: RSA Apple Development (test), OU=test, O=RSA Apple Development, C=US'
+            issuer: 'CN=Apple Development: RSA Apple Development (test), OU=test, O=RSA Apple Development, C=US'
+            key_algorithm: RSA
+            signature_algorithm: SHA-256 with RSA encryption
+            signed_with_algorithm: SHA-256 with RSA encryption
+            is_apple_root_ca: false
+            is_apple_intermediate_ca: false
+            chains_to_apple_root_ca: false
+            apple_extended_key_usages:
+            - Code Signing
+            apple_code_signing_extensions:
+            - iPhone Developer
+            - Mac Developer
+            apple_certificate_profile: apple-development
+            apple_team_id: test
+          signers:
+          - issuer: 'CN=Apple Development: RSA Apple Development (test), OU=test, O=RSA Apple Development, C=US'
+            digest_algorithm: SHA-256
+            signature_algorithm: SHA-256 with RSA encryption
+            attributes:
+            - 1.2.840.113549.1.9.3
+            - 1.2.840.113549.1.9.4
+            - 1.2.840.113549.1.9.5
+            - 1.2.840.113635.100.9.1
+            - 1.2.840.113635.100.9.2
+            content_type: 1.2.840.113549.1.7.1
+            message_digest: fbd3393f2015c87653f2ccef69a864fb60985e21d38485b3bb1c7deeb76d825c
+            signing_time: 2023-11-05T10:00:00Z
+            cdhash_plist:
+            - <?xml version="1.0" encoding="UTF-8"?>
+            - <plist version="1.0">
+            - '  <dict>'
+            - '    <key>cdhashes</key>'
+            - '    <array>'
+            - '      <data>'
+            - "/t/t+9M5PyAVyHZT8szvaahk+2CYXiE="
+            - "/t/t</data>"
+            - '    </array>'
+            - '  </dict>'
+            - </plist>
+            cdhash_digests:
+            - - 2.16.840.1.101.3.4.2.1
+              - fbd3393f2015c87653f2ccef69a864fb60985e21d38485b3bb1c7deeb76d825c
+            signature_verifies: true
+
+$ rcodesign sign --pem-source src/testdata/self-signed-rsa-apple-distribution.pem --signing-time 2023-11-05T10:00:00Z --timestamp-url none exe exe.apple-distribution
+reading PEM data from src/testdata/self-signed-rsa-apple-distribution.pem
+registering signing key
+signing exe to exe.apple-distribution
+signing exe as a Mach-O binary
+setting binary identifier to exe
+parsing Mach-O
+creating cryptographic signature with certificate Apple Distribution: RSA Apple Distribution (test)
+writing Mach-O to exe.apple-distribution
+
+$ rcodesign print-signature-info exe.apple-distribution
+- path: exe.apple-distribution
+  file_size: 22544
+  file_sha256: 81cbb13602e5aa13afd8ba7a2aa20429e13426043660916191318051644d6820
+  entity:
+    mach_o:
+      macho_linkedit_start_offset: 16384 / 0x4000
+      macho_signature_start_offset: 16400 / 0x4010
+      macho_signature_end_offset: 18850 / 0x49a2
+      macho_linkedit_end_offset: 22544 / 0x5810
+      macho_end_offset: 22544 / 0x5810
+      linkedit_signature_start_offset: 16 / 0x10
+      linkedit_signature_end_offset: 2466 / 0x9a2
+      linkedit_bytes_after_signature: 3694 / 0xe6e
+      signature:
+        superblob_length: 2450 / 0x992
+        blob_count: 3
+        blobs:
+        - slot: CodeDirectory (0)
+          magic: fade0c02
+          length: 316
+          sha1: 34fce63175115d3946697622c3c9c258b2fdc82e
+          sha256: 691a7c16a12d28cca6045028c2b1b56d15cf4e1f679bc2c34ecdb57d346bc244
+        - slot: RequirementSet (2)
+          magic: fade0c01
+          length: 80
+          sha1: b9d926a29a6b0a414a767d932df464b0ba4015bc
+          sha256: 93cc24502039c0f7c85f1165b021a7f703793b8d07ce1b71cbb3435c7e4c5d93
+        - slot: CMS Signature (65536)
+          magic: fade0b01
+          length: 2018
+          sha1: d91ee60ca34d3de9169c7cac3fb4f0dbbfbe1d1e
+          sha256: 3164953bd2408b70af58b988d4b619f6f68d502d668d4c5787a03a5155f6ac59
+        code_directory:
+          version: '0x20400'
+          flags: CodeSignatureFlags(0x0)
+          identifier: exe
+          digest_type: sha256
+          platform: 0
+          signed_entity_size: 16400
+          executable_segment_flags: ExecutableSegmentFlags(MAIN_BINARY)
+          code_digests_count: 5
+          slot_digests:
+          - 'Info (1): 0000000000000000000000000000000000000000000000000000000000000000'
+          - 'RequirementSet (2): 93cc24502039c0f7c85f1165b021a7f703793b8d07ce1b71cbb3435c7e4c5d93'
+        code_requirements:
+        - 'designated(3): 0: (identifier "exe") and (certificate root = H"0383efdf909250708bf2de4d43753836ccb3d608");'
+        cms:
+          certificates:
+          - subject: 'CN=Apple Distribution: RSA Apple Distribution (test), OU=test, O=RSA Apple Distribution, C=US'
+            issuer: 'CN=Apple Distribution: RSA Apple Distribution (test), OU=test, O=RSA Apple Distribution, C=US'
+            key_algorithm: RSA
+            signature_algorithm: SHA-256 with RSA encryption
+            signed_with_algorithm: SHA-256 with RSA encryption
+            is_apple_root_ca: false
+            is_apple_intermediate_ca: false
+            chains_to_apple_root_ca: false
+            apple_extended_key_usages:
+            - Code Signing
+            apple_code_signing_extensions:
+            - Apple Mac App Signing (Development)
+            - Apple Developer Certificate (Submission)
+            apple_certificate_profile: apple-distribution
+            apple_team_id: test
+          signers:
+          - issuer: 'CN=Apple Distribution: RSA Apple Distribution (test), OU=test, O=RSA Apple Distribution, C=US'
+            digest_algorithm: SHA-256
+            signature_algorithm: SHA-256 with RSA encryption
+            attributes:
+            - 1.2.840.113549.1.9.3
+            - 1.2.840.113549.1.9.4
+            - 1.2.840.113549.1.9.5
+            - 1.2.840.113635.100.9.1
+            - 1.2.840.113635.100.9.2
+            content_type: 1.2.840.113549.1.7.1
+            message_digest: 691a7c16a12d28cca6045028c2b1b56d15cf4e1f679bc2c34ecdb57d346bc244
+            signing_time: 2023-11-05T10:00:00Z
+            cdhash_plist:
+            - <?xml version="1.0" encoding="UTF-8"?>
+            - <plist version="1.0">
+            - '  <dict>'
+            - '    <key>cdhashes</key>'
+            - '    <array>'
+            - '      <data>'
+            - "/t/taRp8FqEtKMymBFAowrG1bRXPTh8="
+            - "/t/t</data>"
+            - '    </array>'
+            - '  </dict>'
+            - </plist>
+            cdhash_digests:
+            - - 2.16.840.1.101.3.4.2.1
+              - 691a7c16a12d28cca6045028c2b1b56d15cf4e1f679bc2c34ecdb57d346bc244
+            signature_verifies: true
+
+$ rcodesign sign --pem-source src/testdata/self-signed-rsa-developer-id-application.pem --signing-time 2023-11-05T10:00:00Z --timestamp-url none exe exe.developer-id-application
+reading PEM data from src/testdata/self-signed-rsa-developer-id-application.pem
+registering signing key
+signing exe to exe.developer-id-application
+signing exe as a Mach-O binary
+setting binary identifier to exe
+parsing Mach-O
+creating cryptographic signature with certificate Developer ID Application: RSA Developer ID Application (test)
+writing Mach-O to exe.developer-id-application
+
+$ rcodesign print-signature-info exe.developer-id-application
+- path: exe.developer-id-application
+  file_size: 22544
+  file_sha256: 864799f8d45af41c80c3b93be270f559ece79f88e9aa944f4356eefe2532203a
+  entity:
+    mach_o:
+      macho_linkedit_start_offset: 16384 / 0x4000
+      macho_signature_start_offset: 16400 / 0x4010
+      macho_signature_end_offset: 18883 / 0x49c3
+      macho_linkedit_end_offset: 22544 / 0x5810
+      macho_end_offset: 22544 / 0x5810
+      linkedit_signature_start_offset: 16 / 0x10
+      linkedit_signature_end_offset: 2499 / 0x9c3
+      linkedit_bytes_after_signature: 3661 / 0xe4d
+      signature:
+        superblob_length: 2483 / 0x9b3
+        blob_count: 3
+        blobs:
+        - slot: CodeDirectory (0)
+          magic: fade0c02
+          length: 316
+          sha1: e32c3d89be4bd79a707a6028081ad309d230cd6e
+          sha256: 5dd2eefc1b66bc80fc4b3f278aa620a5493f048a68627ca4d8f90e2d2f3841d7
+        - slot: RequirementSet (2)
+          magic: fade0c01
+          length: 80
+          sha1: 6eb37ab943110f6b496aa327c4949c8348ba5456
+          sha256: 0c0961788fa02751edb6b397dd4f130c78edd4380d0a0ddc397cb69fd1e38efa
+        - slot: CMS Signature (65536)
+          magic: fade0b01
+          length: 2051
+          sha1: 6a6c3b85d34353dcd7d77ad0188611beebf1380b
+          sha256: ce9fe441659bdb5e3f65d1fba0e81543445b0c7dc47237e300791b3ddbe31fea
+        code_directory:
+          version: '0x20400'
+          flags: CodeSignatureFlags(0x0)
+          identifier: exe
+          digest_type: sha256
+          platform: 0
+          signed_entity_size: 16400
+          executable_segment_flags: ExecutableSegmentFlags(MAIN_BINARY)
+          code_digests_count: 5
+          slot_digests:
+          - 'Info (1): 0000000000000000000000000000000000000000000000000000000000000000'
+          - 'RequirementSet (2): 0c0961788fa02751edb6b397dd4f130c78edd4380d0a0ddc397cb69fd1e38efa'
+        code_requirements:
+        - 'designated(3): 0: (identifier "exe") and (certificate root = H"3acf1d302fe3a4bba06a3c16aadc908045bc9162");'
+        cms:
+          certificates:
+          - subject: 'CN=Developer ID Application: RSA Developer ID Application (test), OU=test, O=RSA Developer ID Application, C=US'
+            issuer: 'CN=Developer ID Application: RSA Developer ID Application (test), OU=test, O=RSA Developer ID Application, C=US'
+            key_algorithm: RSA
+            signature_algorithm: SHA-256 with RSA encryption
+            signed_with_algorithm: SHA-256 with RSA encryption
+            is_apple_root_ca: false
+            is_apple_intermediate_ca: false
+            chains_to_apple_root_ca: false
+            apple_extended_key_usages:
+            - Code Signing
+            apple_code_signing_extensions:
+            - Developer ID Application
+            apple_certificate_profile: developer-id-application
+            apple_team_id: test
+          signers:
+          - issuer: 'CN=Developer ID Application: RSA Developer ID Application (test), OU=test, O=RSA Developer ID Application, C=US'
+            digest_algorithm: SHA-256
+            signature_algorithm: SHA-256 with RSA encryption
+            attributes:
+            - 1.2.840.113549.1.9.3
+            - 1.2.840.113549.1.9.4
+            - 1.2.840.113549.1.9.5
+            - 1.2.840.113635.100.9.1
+            - 1.2.840.113635.100.9.2
+            content_type: 1.2.840.113549.1.7.1
+            message_digest: 5dd2eefc1b66bc80fc4b3f278aa620a5493f048a68627ca4d8f90e2d2f3841d7
+            signing_time: 2023-11-05T10:00:00Z
+            cdhash_plist:
+            - <?xml version="1.0" encoding="UTF-8"?>
+            - <plist version="1.0">
+            - '  <dict>'
+            - '    <key>cdhashes</key>'
+            - '    <array>'
+            - '      <data>'
+            - "/t/tXdLu/BtmvID8Sz8niqYgpUk/BIo="
+            - "/t/t</data>"
+            - '    </array>'
+            - '  </dict>'
+            - </plist>
+            cdhash_digests:
+            - - 2.16.840.1.101.3.4.2.1
+              - 5dd2eefc1b66bc80fc4b3f278aa620a5493f048a68627ca4d8f90e2d2f3841d7
+            signature_verifies: true
+
+$ rcodesign sign --pem-source src/testdata/self-signed-rsa-developer-id-installer.pem --signing-time 2023-11-05T10:00:00Z --timestamp-url none exe exe.developer-id-installer
+reading PEM data from src/testdata/self-signed-rsa-developer-id-installer.pem
+registering signing key
+signing exe to exe.developer-id-installer
+signing exe as a Mach-O binary
+setting binary identifier to exe
+parsing Mach-O
+creating cryptographic signature with certificate Developer ID Installer: RSA Developer ID Installer (test)
+writing Mach-O to exe.developer-id-installer
+
+$ rcodesign print-signature-info exe.developer-id-installer
+- path: exe.developer-id-installer
+  file_size: 22544
+  file_sha256: 21c767ead15a921e3e30c767edad0fa427a1d6d2a40b4f441a6887936f50f3d4
+  entity:
+    mach_o:
+      macho_linkedit_start_offset: 16384 / 0x4000
+      macho_signature_start_offset: 16400 / 0x4010
+      macho_signature_end_offset: 18866 / 0x49b2
+      macho_linkedit_end_offset: 22544 / 0x5810
+      macho_end_offset: 22544 / 0x5810
+      linkedit_signature_start_offset: 16 / 0x10
+      linkedit_signature_end_offset: 2482 / 0x9b2
+      linkedit_bytes_after_signature: 3678 / 0xe5e
+      signature:
+        superblob_length: 2466 / 0x9a2
+        blob_count: 3
+        blobs:
+        - slot: CodeDirectory (0)
+          magic: fade0c02
+          length: 316
+          sha1: b1d835487867f475abdf906baacba12f8e4083cc
+          sha256: b69ec4756395b108b381e8a40969b849986b28ff14ce1f8346e49d16278b093b
+        - slot: RequirementSet (2)
+          magic: fade0c01
+          length: 80
+          sha1: bbf8d975b30086c19734ae0c52a2f0a296515ab3
+          sha256: 77c190fb1bb2b3add5411d105d9d306cb5eb4bcb54ec1a7771239bebcc03e54c
+        - slot: CMS Signature (65536)
+          magic: fade0b01
+          length: 2034
+          sha1: 106fda991c0624264fe46127d92b85ef33dc8ae9
+          sha256: 0806066e436723014fbf803ba8b465bcde2d39aff1951bee92afa78f623c221e
+        code_directory:
+          version: '0x20400'
+          flags: CodeSignatureFlags(0x0)
+          identifier: exe
+          digest_type: sha256
+          platform: 0
+          signed_entity_size: 16400
+          executable_segment_flags: ExecutableSegmentFlags(MAIN_BINARY)
+          code_digests_count: 5
+          slot_digests:
+          - 'Info (1): 0000000000000000000000000000000000000000000000000000000000000000'
+          - 'RequirementSet (2): 77c190fb1bb2b3add5411d105d9d306cb5eb4bcb54ec1a7771239bebcc03e54c'
+        code_requirements:
+        - 'designated(3): 0: (identifier "exe") and (certificate root = H"5c1314a89e5a486ac7b1da86b38e08777adca4af");'
+        cms:
+          certificates:
+          - subject: 'CN=Developer ID Installer: RSA Developer ID Installer (test), OU=test, O=RSA Developer ID Installer, C=US'
+            issuer: 'CN=Developer ID Installer: RSA Developer ID Installer (test), OU=test, O=RSA Developer ID Installer, C=US'
+            key_algorithm: RSA
+            signature_algorithm: SHA-256 with RSA encryption
+            signed_with_algorithm: SHA-256 with RSA encryption
+            is_apple_root_ca: false
+            is_apple_intermediate_ca: false
+            chains_to_apple_root_ca: false
+            apple_extended_key_usages:
+            - Developer ID Installer
+            apple_code_signing_extensions:
+            - Developer ID Installer
+            apple_certificate_profile: developer-id-installer
+            apple_team_id: test
+          signers:
+          - issuer: 'CN=Developer ID Installer: RSA Developer ID Installer (test), OU=test, O=RSA Developer ID Installer, C=US'
+            digest_algorithm: SHA-256
+            signature_algorithm: SHA-256 with RSA encryption
+            attributes:
+            - 1.2.840.113549.1.9.3
+            - 1.2.840.113549.1.9.4
+            - 1.2.840.113549.1.9.5
+            - 1.2.840.113635.100.9.1
+            - 1.2.840.113635.100.9.2
+            content_type: 1.2.840.113549.1.7.1
+            message_digest: b69ec4756395b108b381e8a40969b849986b28ff14ce1f8346e49d16278b093b
+            signing_time: 2023-11-05T10:00:00Z
+            cdhash_plist:
+            - <?xml version="1.0" encoding="UTF-8"?>
+            - <plist version="1.0">
+            - '  <dict>'
+            - '    <key>cdhashes</key>'
+            - '    <array>'
+            - '      <data>'
+            - "/t/ttp7EdWOVsQizgeikCWm4SZhrKP8="
+            - "/t/t</data>"
+            - '    </array>'
+            - '  </dict>'
+            - </plist>
+            cdhash_digests:
+            - - 2.16.840.1.101.3.4.2.1
+              - b69ec4756395b108b381e8a40969b849986b28ff14ce1f8346e49d16278b093b
+            signature_verifies: true
+
+$ rcodesign sign --pem-source src/testdata/self-signed-rsa-mac-installer-distribution.pem --signing-time 2023-11-05T10:00:00Z --timestamp-url none exe exe.mac-installer-distribution
+reading PEM data from src/testdata/self-signed-rsa-mac-installer-distribution.pem
+registering signing key
+signing exe to exe.mac-installer-distribution
+signing exe as a Mach-O binary
+setting binary identifier to exe
+parsing Mach-O
+creating cryptographic signature with certificate 3rd Party Mac Developer Installer: RSA Mac Installer Distribution (test)
+writing Mach-O to exe.mac-installer-distribution
+
+$ rcodesign print-signature-info exe.mac-installer-distribution
+- path: exe.mac-installer-distribution
+  file_size: 22544
+  file_sha256: d95e33ec011ce293e9fd0f5b5e14cfe6ce42ecca863a72e50bf7260dab4c577f
+  entity:
+    mach_o:
+      macho_linkedit_start_offset: 16384 / 0x4000
+      macho_signature_start_offset: 16400 / 0x4010
+      macho_signature_end_offset: 18923 / 0x49eb
+      macho_linkedit_end_offset: 22544 / 0x5810
+      macho_end_offset: 22544 / 0x5810
+      linkedit_signature_start_offset: 16 / 0x10
+      linkedit_signature_end_offset: 2539 / 0x9eb
+      linkedit_bytes_after_signature: 3621 / 0xe25
+      signature:
+        superblob_length: 2523 / 0x9db
+        blob_count: 3
+        blobs:
+        - slot: CodeDirectory (0)
+          magic: fade0c02
+          length: 316
+          sha1: 25b36eef594655dc5d3fe2546b8544689dce35a6
+          sha256: 573b8c4f66ff2bd848f7af75fdb3daba70f38287b93463dfec1e0586f01ea59d
+        - slot: RequirementSet (2)
+          magic: fade0c01
+          length: 80
+          sha1: 79b9c12819b6a549c8b107dc31a253351ad82e55
+          sha256: 7d2395bc79aad815504fb0dcca84e5a009ac109a78843d24e8592c48f54388b7
+        - slot: CMS Signature (65536)
+          magic: fade0b01
+          length: 2091
+          sha1: 2c14a17b4c055b6a56dff68eae8bf9cfb7bfa36c
+          sha256: 6a3e036f02b15b5117438fce7931b03f3b7b3b2a48bc557ba45be6bb9e364622
+        code_directory:
+          version: '0x20400'
+          flags: CodeSignatureFlags(0x0)
+          identifier: exe
+          digest_type: sha256
+          platform: 0
+          signed_entity_size: 16400
+          executable_segment_flags: ExecutableSegmentFlags(MAIN_BINARY)
+          code_digests_count: 5
+          slot_digests:
+          - 'Info (1): 0000000000000000000000000000000000000000000000000000000000000000'
+          - 'RequirementSet (2): 7d2395bc79aad815504fb0dcca84e5a009ac109a78843d24e8592c48f54388b7'
+        code_requirements:
+        - 'designated(3): 0: (identifier "exe") and (certificate root = H"58e39fe0fca55e7af4ca00027bc7c59e566e960a");'
+        cms:
+          certificates:
+          - subject: 'CN=3rd Party Mac Developer Installer: RSA Mac Installer Distribution (test), OU=test, O=RSA Mac Installer Distribution, C=US'
+            issuer: 'CN=3rd Party Mac Developer Installer: RSA Mac Installer Distribution (test), OU=test, O=RSA Mac Installer Distribution, C=US'
+            key_algorithm: RSA
+            signature_algorithm: SHA-256 with RSA encryption
+            signed_with_algorithm: SHA-256 with RSA encryption
+            is_apple_root_ca: false
+            is_apple_intermediate_ca: false
+            chains_to_apple_root_ca: false
+            apple_extended_key_usages:
+            - 3rd Party Mac Developer Installer Packaging Signing
+            apple_code_signing_extensions:
+            - Apple Mac App Signing Submission
+            apple_certificate_profile: mac-installer-distribution
+            apple_team_id: test
+          signers:
+          - issuer: 'CN=3rd Party Mac Developer Installer: RSA Mac Installer Distribution (test), OU=test, O=RSA Mac Installer Distribution, C=US'
+            digest_algorithm: SHA-256
+            signature_algorithm: SHA-256 with RSA encryption
+            attributes:
+            - 1.2.840.113549.1.9.3
+            - 1.2.840.113549.1.9.4
+            - 1.2.840.113549.1.9.5
+            - 1.2.840.113635.100.9.1
+            - 1.2.840.113635.100.9.2
+            content_type: 1.2.840.113549.1.7.1
+            message_digest: 573b8c4f66ff2bd848f7af75fdb3daba70f38287b93463dfec1e0586f01ea59d
+            signing_time: 2023-11-05T10:00:00Z
+            cdhash_plist:
+            - <?xml version="1.0" encoding="UTF-8"?>
+            - <plist version="1.0">
+            - '  <dict>'
+            - '    <key>cdhashes</key>'
+            - '    <array>'
+            - '      <data>'
+            - "/t/tVzuMT2b/K9hI9691/bPaunDzgoc="
+            - "/t/t</data>"
+            - '    </array>'
+            - '  </dict>'
+            - </plist>
+            cdhash_digests:
+            - - 2.16.840.1.101.3.4.2.1
+              - 573b8c4f66ff2bd848f7af75fdb3daba70f38287b93463dfec1e0586f01ea59d
+            signature_verifies: true
+
+```

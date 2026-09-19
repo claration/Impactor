@@ -76,11 +76,8 @@ jobs:
 
       - name: Build binaries (Windows ARM64 native)
         if: matrix.arch == 'arm64'
-        env:
-          CARGO_BUILD_RUSTC_WRAPPER: "./.cargo/rustc-wrapper.exe"
         shell: pwsh
         run: |
-          rustc ./.cargo/rustc-wrapper.rs -o ./.cargo/rustc-wrapper.exe
           cargo build --bins --workspace --release --target ${{ matrix.target }}
           New-Item -ItemType Directory -Force -Path dist
           Copy-Item "target/${{ matrix.target }}/release/plumeimpactor.exe" "dist/Impactor-windows-${{ matrix.arch }}-portable.exe"

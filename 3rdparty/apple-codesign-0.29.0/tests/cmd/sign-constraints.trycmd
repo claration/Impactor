@@ -1,0 +1,191 @@
+```
+$ rcodesign debug-create-macho exe
+assuming default minimum version 11.0.0
+writing Mach-O to exe
+
+$ rcodesign debug-create-constraints --team-id self self.plist
+writing constraints plist to self.plist
+
+$ rcodesign debug-create-constraints --team-id parent parent.plist
+writing constraints plist to parent.plist
+
+$ rcodesign debug-create-constraints --team-id responsible responsible.plist
+writing constraints plist to responsible.plist
+
+$ rcodesign debug-create-constraints --team-id library library.plist
+writing constraints plist to library.plist
+
+$ rcodesign -v sign --launch-constraints-self-file self.plist --launch-constraints-parent-file parent.plist --launch-constraints-responsible-file responsible.plist --library-constraints-file library.plist exe exe.signed
+setting self launch constraints for main signing target from path self.plist
+setting parent process launch constraints for main signing target from path parent.plist
+setting responsible process launch constraints for main signing target from path responsible.plist
+setting loaded library constraints for main signing target from path library.plist
+signing exe to exe.signed
+signing exe as a Mach-O binary
+inferring default signing settings from Mach-O binary
+setting binary identifier to exe
+parsing Mach-O
+signing Mach-O binary at index 0
+binary targets macOS >= 11.0.0 with SDK 11.0.0
+creating ad-hoc signature
+code directory version: 132096
+total signature size: 1072 bytes
+writing Mach-O to exe.signed
+
+$ rcodesign print-signature-info exe.signed
+- path: exe.signed
+  file_size: 22544
+  file_sha256: 790c4aa4f95ed99bf7a0c8bc7fdbb5db42d0866d28deb61d321e437074b2e2cb
+  entity:
+    mach_o:
+      macho_linkedit_start_offset: 16384 / 0x4000
+      macho_signature_start_offset: 16400 / 0x4010
+      macho_signature_end_offset: 17472 / 0x4440
+      macho_linkedit_end_offset: 22544 / 0x5810
+      macho_end_offset: 22544 / 0x5810
+      linkedit_signature_start_offset: 16 / 0x10
+      linkedit_signature_end_offset: 1088 / 0x440
+      linkedit_bytes_after_signature: 5072 / 0x13d0
+      signature:
+        superblob_length: 1072 / 0x430
+        blob_count: 7
+        blobs:
+        - slot: CodeDirectory (0)
+          magic: fade0c02
+          length: 604
+          sha1: 45ef0fe3d1f42d9b5c0a3261f82bc536626ede6c
+          sha256: f791189a8fbd8abfc7184baa075d428788e7a1a86fbfe899365069efe3c1b50f
+        - slot: RequirementSet (2)
+          magic: fade0c01
+          length: 12
+          sha1: 3a75f6db058529148e14dd7ea1b4729cc09ec973
+          sha256: 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986
+        - slot: DER Launch Constraints on Self (8)
+          magic: fade8181
+          length: 92
+          sha1: 2b749fe77b21e8fbd4a0896e011be9ee11d0bfe5
+          sha256: cae1ca80e110bff504600a455803bd4260c71a2a3df3ee81f6f3cc3bb39eb94e
+        - slot: DER Launch Constraints on Parent (9)
+          magic: fade8181
+          length: 94
+          sha1: 27ea439e8ad23bbe2951638ccccbe75c2aa138d7
+          sha256: 612cc88ec1c1e9c015953a7caae667169f646bf9d4c0fa63091bf55d285c558c
+        - slot: DER Launch Constraints on Responsible Process (10)
+          magic: fade8181
+          length: 99
+          sha1: e33c702c7b73cb54009443ddab5ea6e82574ce58
+          sha256: 5410d96426086e9ad39af854d512ba3ac0465aa33e0116e7c3b3241e8ceaa0ac
+        - slot: DER Launch Constraints on Loaded Libraries (11)
+          magic: fade8181
+          length: 95
+          sha1: 7a3ca2070d329bf7eee56303568f81e920c48006
+          sha256: 1aa9eb84f1e5332c9a7d818702c574120674c073e03decafe1dba6e3e3f2a7ea
+        - slot: CMS Signature (65536)
+          magic: fade0b01
+          length: 8
+          sha1: 2a7254313aa41796079bb0e9d0f044345f69f98b
+          sha256: e6c83bc98a10348492c7d4d2378a54572ef29e1a5692ccd02b5e29f4b762d6a0
+        code_directory:
+          version: '0x20400'
+          flags: CodeSignatureFlags(ADHOC)
+          identifier: exe
+          digest_type: sha256
+          platform: 0
+          signed_entity_size: 16400
+          executable_segment_flags: ExecutableSegmentFlags(MAIN_BINARY)
+          code_digests_count: 5
+          slot_digests:
+          - 'Info (1): 0000000000000000000000000000000000000000000000000000000000000000'
+          - 'RequirementSet (2): 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986'
+          - 'Resources (3): 0000000000000000000000000000000000000000000000000000000000000000'
+          - 'Application (4): 0000000000000000000000000000000000000000000000000000000000000000'
+          - 'Entitlements (5): 0000000000000000000000000000000000000000000000000000000000000000'
+          - 'Rep Specific (6): 0000000000000000000000000000000000000000000000000000000000000000'
+          - 'DER Entitlements (7): 0000000000000000000000000000000000000000000000000000000000000000'
+          - 'DER Launch Constraints on Self (8): cae1ca80e110bff504600a455803bd4260c71a2a3df3ee81f6f3cc3bb39eb94e'
+          - 'DER Launch Constraints on Parent (9): 612cc88ec1c1e9c015953a7caae667169f646bf9d4c0fa63091bf55d285c558c'
+          - 'DER Launch Constraints on Responsible Process (10): 5410d96426086e9ad39af854d512ba3ac0465aa33e0116e7c3b3241e8ceaa0ac'
+          - 'DER Launch Constraints on Loaded Libraries (11): 1aa9eb84f1e5332c9a7d818702c574120674c073e03decafe1dba6e3e3f2a7ea'
+        launch_constraints_self:
+        - <?xml version="1.0" encoding="UTF-8"?>
+        - <plist version="1.0">
+        - '  <dict>'
+        - '    <key>ccat</key>'
+        - '    <integer>0</integer>'
+        - '    <key>comp</key>'
+        - '    <integer>1</integer>'
+        - '    <key>reqs</key>'
+        - '    <dict>'
+        - '      <key>$or</key>'
+        - '      <dict>'
+        - '        <key>team-identifier</key>'
+        - '        <string>self</string>'
+        - '      </dict>'
+        - '    </dict>'
+        - '    <key>vers</key>'
+        - '    <integer>1</integer>'
+        - '  </dict>'
+        - </plist>
+        launch_constraints_parent:
+        - <?xml version="1.0" encoding="UTF-8"?>
+        - <plist version="1.0">
+        - '  <dict>'
+        - '    <key>ccat</key>'
+        - '    <integer>0</integer>'
+        - '    <key>comp</key>'
+        - '    <integer>1</integer>'
+        - '    <key>reqs</key>'
+        - '    <dict>'
+        - '      <key>$or</key>'
+        - '      <dict>'
+        - '        <key>team-identifier</key>'
+        - '        <string>parent</string>'
+        - '      </dict>'
+        - '    </dict>'
+        - '    <key>vers</key>'
+        - '    <integer>1</integer>'
+        - '  </dict>'
+        - </plist>
+        launch_constraints_responsible:
+        - <?xml version="1.0" encoding="UTF-8"?>
+        - <plist version="1.0">
+        - '  <dict>'
+        - '    <key>ccat</key>'
+        - '    <integer>0</integer>'
+        - '    <key>comp</key>'
+        - '    <integer>1</integer>'
+        - '    <key>reqs</key>'
+        - '    <dict>'
+        - '      <key>$or</key>'
+        - '      <dict>'
+        - '        <key>team-identifier</key>'
+        - '        <string>responsible</string>'
+        - '      </dict>'
+        - '    </dict>'
+        - '    <key>vers</key>'
+        - '    <integer>1</integer>'
+        - '  </dict>'
+        - </plist>
+        library_constraints:
+        - <?xml version="1.0" encoding="UTF-8"?>
+        - <plist version="1.0">
+        - '  <dict>'
+        - '    <key>ccat</key>'
+        - '    <integer>0</integer>'
+        - '    <key>comp</key>'
+        - '    <integer>1</integer>'
+        - '    <key>reqs</key>'
+        - '    <dict>'
+        - '      <key>$or</key>'
+        - '      <dict>'
+        - '        <key>team-identifier</key>'
+        - '        <string>library</string>'
+        - '      </dict>'
+        - '    </dict>'
+        - '    <key>vers</key>'
+        - '    <integer>1</integer>'
+        - '  </dict>'
+        - </plist>
+        cms: null
+
+```

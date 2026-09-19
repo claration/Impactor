@@ -1,0 +1,139 @@
+Signing a Mach-O whose __TEXT segment starts after file start and after
+load commands.
+
+```
+$ rcodesign debug-create-macho --text-segment-start-offset 4096 exe
+assuming default minimum version 11.0.0
+writing Mach-O to exe
+
+$ rcodesign sign exe exe.signed
+signing exe to exe.signed
+signing exe as a Mach-O binary
+setting binary identifier to exe
+parsing Mach-O
+writing Mach-O to exe.signed
+
+$ rcodesign extract macho-segments exe.signed
+segments count: 5
+segment #0; __PAGEZERO; offsets=0x0-0x0 (0-0); addresses=0x0-0x100000000; vm/file size 4294967296/0; section count 0
+segment #1; __TEXT; offsets=0x1000-0x4000 (4096-16384); addresses=0x100000000-0x100000000; vm/file size 0/12288; section count 2
+segment #1; section #0: __text; offsets=0x4000-0x4000 (16384-16384); addresses=0x100000000-0x100000000; size 0; align=16384; flags=0
+segment #1; section #1: __const; offsets=0x4000-0x4000 (16384-16384); addresses=0x100000000-0x100000000; size 0; align=16384; flags=0
+segment #2; __DATA_CONST; offsets=0x4000-0x4000 (16384-16384); addresses=0x100000000-0x100000000; vm/file size 0/0; section count 1
+segment #2; section #0: __const; offsets=0x4000-0x4000 (16384-16384); addresses=0x100000000-0x100000000; size 0; align=16384; flags=0
+segment #3; __DATA; offsets=0x4000-0x4000 (16384-16384); addresses=0x100000000-0x100000000; vm/file size 0/0; section count 1
+segment #3; section #0: __data; offsets=0x4000-0x4000 (16384-16384); addresses=0x100000000-0x100000000; size 0; align=16384; flags=0
+segment #4; __LINKEDIT; offsets=0x4000-0x5810 (16384-22544); addresses=0x100000000-0x100004000; vm/file size 16384/6160; section count 0
+
+$ rcodesign print-signature-info exe.signed
+- path: exe.signed
+  file_size: 22544
+  file_sha256: 77b1ad57dcdf3cc1691937f60b19e1d0ddcc9375ef2434a5c3afd0f543f6c8d6
+  entity:
+    mach_o:
+      macho_linkedit_start_offset: 16384 / 0x4000
+      macho_signature_start_offset: 16400 / 0x4010
+      macho_signature_end_offset: 16772 / 0x4184
+      macho_linkedit_end_offset: 22544 / 0x5810
+      macho_end_offset: 22544 / 0x5810
+      linkedit_signature_start_offset: 16 / 0x10
+      linkedit_signature_end_offset: 388 / 0x184
+      linkedit_bytes_after_signature: 5772 / 0x168c
+      signature:
+        superblob_length: 372 / 0x174
+        blob_count: 3
+        blobs:
+        - slot: CodeDirectory (0)
+          magic: fade0c02
+          length: 316
+          sha1: 1f4bd3829ad41fe48fb516b9f22129f680f38f25
+          sha256: 3fcf43c77ae4ff699ba01bdbb0e77a934ae1ad09f66adf65fb4b03775e5df2f5
+        - slot: RequirementSet (2)
+          magic: fade0c01
+          length: 12
+          sha1: 3a75f6db058529148e14dd7ea1b4729cc09ec973
+          sha256: 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986
+        - slot: CMS Signature (65536)
+          magic: fade0b01
+          length: 8
+          sha1: 2a7254313aa41796079bb0e9d0f044345f69f98b
+          sha256: e6c83bc98a10348492c7d4d2378a54572ef29e1a5692ccd02b5e29f4b762d6a0
+        code_directory:
+          version: '0x20400'
+          flags: CodeSignatureFlags(ADHOC)
+          identifier: exe
+          digest_type: sha256
+          platform: 0
+          signed_entity_size: 16400
+          executable_segment_flags: ExecutableSegmentFlags(MAIN_BINARY)
+          code_digests_count: 5
+          slot_digests:
+          - 'Info (1): 0000000000000000000000000000000000000000000000000000000000000000'
+          - 'RequirementSet (2): 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986'
+        cms: null
+
+```
+
+Signing a Mach-O whose __TEXT segment doesn't begin at 0x0 and whose
+non-zero start is before the end of the load commands.
+
+```
+$ rcodesign debug-create-macho --text-segment-start-offset 64 exe
+assuming default minimum version 11.0.0
+writing Mach-O to exe
+
+$ rcodesign sign exe exe.signed
+signing exe to exe.signed
+signing exe as a Mach-O binary
+setting binary identifier to exe
+parsing Mach-O
+writing Mach-O to exe.signed
+
+$ rcodesign print-signature-info exe.signed
+- path: exe.signed
+  file_size: 22544
+  file_sha256: 8c5f46d87038f6028bc60f2a7c62bc842e80a738053a377ac4cb3c93a7114658
+  entity:
+    mach_o:
+      macho_linkedit_start_offset: 16384 / 0x4000
+      macho_signature_start_offset: 16400 / 0x4010
+      macho_signature_end_offset: 16772 / 0x4184
+      macho_linkedit_end_offset: 22544 / 0x5810
+      macho_end_offset: 22544 / 0x5810
+      linkedit_signature_start_offset: 16 / 0x10
+      linkedit_signature_end_offset: 388 / 0x184
+      linkedit_bytes_after_signature: 5772 / 0x168c
+      signature:
+        superblob_length: 372 / 0x174
+        blob_count: 3
+        blobs:
+        - slot: CodeDirectory (0)
+          magic: fade0c02
+          length: 316
+          sha1: 43d43e2056ce1c367bc707f0dbe35550e3d1e44c
+          sha256: 55bed196e4c5df215500e1587a172a47b0640a7d19307b8bd04165ddb33216ed
+        - slot: RequirementSet (2)
+          magic: fade0c01
+          length: 12
+          sha1: 3a75f6db058529148e14dd7ea1b4729cc09ec973
+          sha256: 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986
+        - slot: CMS Signature (65536)
+          magic: fade0b01
+          length: 8
+          sha1: 2a7254313aa41796079bb0e9d0f044345f69f98b
+          sha256: e6c83bc98a10348492c7d4d2378a54572ef29e1a5692ccd02b5e29f4b762d6a0
+        code_directory:
+          version: '0x20400'
+          flags: CodeSignatureFlags(ADHOC)
+          identifier: exe
+          digest_type: sha256
+          platform: 0
+          signed_entity_size: 16400
+          executable_segment_flags: ExecutableSegmentFlags(MAIN_BINARY)
+          code_digests_count: 5
+          slot_digests:
+          - 'Info (1): 0000000000000000000000000000000000000000000000000000000000000000'
+          - 'RequirementSet (2): 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986'
+        cms: null
+
+```

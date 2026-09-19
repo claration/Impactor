@@ -1,0 +1,70 @@
+```
+$ rcodesign help encode-app-store-connect-api-key
+Encode App Store Connect API Key metadata to JSON
+
+App Store Connect API Keys
+(https://developer.apple.com/documentation/appstoreconnectapi/creating_api_keys_for_app_store_connect_api)
+are defined by 3 components:
+
+* The Issuer ID (likely a UUID)
+* A Key ID (an alphanumeric value like `DEADBEEF42`)
+* A PEM encoded ECDSA private key (typically a file beginning with
+  `-----BEGIN PRIVATE KEY-----`).
+
+This command is used to encode all API Key components into a single JSON
+object so you only have to refer to a single entity when performing
+operations (like notarization) using these API Keys.
+
+The API Key components are specified as positional arguments.
+
+By default, the JSON encoded unified representation is printed to stdout.
+You can write to a file instead by passing `--output-path <path>`.
+
+# Security Considerations
+
+The App Store Connect API Key contains a private key and its value should be
+treated as sensitive: if an unwanted party obtains your private key, they
+effectively have access to your App Store Connect account.
+
+When this command writes JSON files, an attempt is made to limit access
+to the file. However, file access restrictions may not be as secure as you
+want. Security conscious individuals should audit the permissions of the
+file and adjust accordingly.
+
+Usage: rcodesign[EXE] encode-app-store-connect-api-key [OPTIONS] <ISSUER_ID> <KEY_ID> <PRIVATE_KEY_PATH>
+
+Arguments:
+  <ISSUER_ID>
+          The issuer of the API Token. Likely a UUID
+
+  <KEY_ID>
+          The Key ID. A short alphanumeric string like DEADBEEF42
+
+  <PRIVATE_KEY_PATH>
+          Path to a file containing the private key downloaded from Apple
+
+Options:
+  -C, --config-file <CONFIG_PATH>
+          Explicit configuration file to load.
+          
+          If provided, the default configuration files are not loaded, even if they exist.
+          
+          Can be specified multiple times. Files are loaded/merged in the order given.
+          
+          The special value `/dev/null` can be used to specify an empty/null config file. It can be used to short-circuit loading of default config files.
+
+  -o, --output-path <OUTPUT_PATH>
+          Path to a JSON file to create the output to
+
+  -P, --profile <PROFILE>
+          Configuration profile to load.
+          
+          If not specified, the implicit "default" profile is loaded.
+
+  -v, --verbose...
+          Increase logging verbosity. Can be specified multiple times
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+```

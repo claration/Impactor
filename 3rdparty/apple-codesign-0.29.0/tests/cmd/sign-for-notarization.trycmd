@@ -1,0 +1,137 @@
+Sign a bundle containing multiple Mach-O binaries.
+
+```
+$ rcodesign debug-create-macho MyApp.app/Contents/MacOS/MyApp
+assuming default minimum version 11.0.0
+writing Mach-O to MyApp.app/Contents/MacOS/MyApp
+
+$ rcodesign debug-create-macho MyApp.app/Contents/MacOS/bin
+assuming default minimum version 11.0.0
+writing Mach-O to MyApp.app/Contents/MacOS/bin
+
+$ rcodesign debug-create-macho --file-type dylib MyApp.app/Contents/MacOS/lib.dylib
+assuming default minimum version 11.0.0
+writing Mach-O to MyApp.app/Contents/MacOS/lib.dylib
+
+$ rcodesign debug-create-macho MyApp.app/Contents/Resources/non-nested-bin
+assuming default minimum version 11.0.0
+writing Mach-O to MyApp.app/Contents/Resources/non-nested-bin
+
+$ rcodesign debug-create-info-plist --bundle-name MyApp MyApp.app/Contents/Info.plist
+writing MyApp.app/Contents/Info.plist
+
+$ rcodesign sign --for-notarization MyApp.app MyApp.app.signed
+? 1
+--for-notarization requires use of a Developer ID signing certificate; no signing certificate was provided
+Error: signing settings are not compatible with notarization
+
+$ rcodesign sign --for-notarization --pem-source src/testdata/self-signed-rsa-apple-development.pem MyApp.app MyApp.app.signed
+? 1
+reading PEM data from src/testdata/self-signed-rsa-apple-development.pem
+registering signing key
+using time-stamp protocol server http://timestamp.apple.com/ts01
+--for-notarization requires use of an Apple-issued signing certificate; current certificate is not signed by Apple
+hint: use a signing certificate issued by Apple that is signed by an Apple certificate authority
+--for-notarization requires use of a Developer ID signing certificate; current certificate doesn't appear to be such a certificate
+hint: use a `Developer ID Application`, `Developer ID Installer`, or `Developer ID Kernel` certificate
+Error: signing settings are not compatible with notarization
+
+$ rcodesign sign --for-notarization --pem-source src/testdata/self-signed-rsa-developer-id-application.pem MyApp.app MyApp.app.signed
+? 1
+reading PEM data from src/testdata/self-signed-rsa-developer-id-application.pem
+registering signing key
+using time-stamp protocol server http://timestamp.apple.com/ts01
+--for-notarization requires use of an Apple-issued signing certificate; current certificate is not signed by Apple
+hint: use a signing certificate issued by Apple that is signed by an Apple certificate authority
+Error: signing settings are not compatible with notarization
+
+$ rcodesign sign --for-notarization --pem-source src/testdata/self-signed-rsa-developer-id-application.pem --timestamp-url none MyApp.app MyApp.app.signed
+? 1
+reading PEM data from src/testdata/self-signed-rsa-developer-id-application.pem
+registering signing key
+--for-notarization requires use of an Apple-issued signing certificate; current certificate is not signed by Apple
+hint: use a signing certificate issued by Apple that is signed by an Apple certificate authority
+--for-notarization requires use of a time-stamp protocol server; none configured
+Error: signing settings are not compatible with notarization
+
+$ rcodesign sign -v --for-notarization --signing-time 2024-01-01T00:00:00Z --pem-source src/testdata/self-signed-rsa-developer-id-application2.pem MyApp.app MyApp.app.signed
+reading PEM data from src/testdata/self-signed-rsa-developer-id-application2.pem
+adding private key from src/testdata/self-signed-rsa-developer-id-application2.pem
+adding certificate from src/testdata/self-signed-rsa-developer-id-application2.pem
+registering signing key
+using time-stamp protocol server http://timestamp.apple.com/ts01
+signing MyApp.app to MyApp.app.signed
+signing bundle at MyApp.app
+signing bundle at MyApp.app into MyApp.app.signed
+collecting code resources files
+copying file MyApp.app/Contents/Info.plist -> MyApp.app.signed/Contents/Info.plist
+sealing nested Mach-O binary: Contents/MacOS/bin
+signing Mach-O file Contents/MacOS/bin
+setting binary identifier based on path: bin
+inferring default signing settings from Mach-O binary
+signing Mach-O binary at index 0
+deriving code requirements from signing certificate
+deriving code requirements from signing certificate
+binary targets macOS >= 11.0.0 with SDK 11.0.0
+adding hardened runtime flag because notarization mode enabled
+adding code signature flags from signing settings: CodeSignatureFlags(RUNTIME)
+using hardened runtime version 11.0.0 derived from SDK version
+code directory version: 132352
+creating cryptographic signature with certificate Developer ID Application: John Signer (deadbeef)
+Using time-stamp server http://timestamp.apple.com/ts01
+Using signing time 2024-01-01T00:00:00+00:00
+total signature size: [..] bytes
+writing Mach-O to MyApp.app.signed/Contents/MacOS/bin
+sealing nested Mach-O binary: Contents/MacOS/lib.dylib
+signing Mach-O file Contents/MacOS/lib.dylib
+setting binary identifier based on path: lib
+inferring default signing settings from Mach-O binary
+signing Mach-O binary at index 0
+deriving code requirements from signing certificate
+deriving code requirements from signing certificate
+binary targets macOS >= 11.0.0 with SDK 11.0.0
+adding hardened runtime flag because notarization mode enabled
+adding code signature flags from signing settings: CodeSignatureFlags(RUNTIME)
+using hardened runtime version 11.0.0 derived from SDK version
+code directory version: 132352
+creating cryptographic signature with certificate Developer ID Application: John Signer (deadbeef)
+Using time-stamp server http://timestamp.apple.com/ts01
+Using signing time 2024-01-01T00:00:00+00:00
+total signature size: [..] bytes
+writing Mach-O to MyApp.app.signed/Contents/MacOS/lib.dylib
+non-nested file is a Mach-O binary; signing accordingly Contents/Resources/non-nested-bin
+signing Mach-O file Contents/Resources/non-nested-bin
+setting binary identifier based on path: non-nested-bin
+inferring default signing settings from Mach-O binary
+signing Mach-O binary at index 0
+deriving code requirements from signing certificate
+deriving code requirements from signing certificate
+binary targets macOS >= 11.0.0 with SDK 11.0.0
+adding hardened runtime flag because notarization mode enabled
+adding code signature flags from signing settings: CodeSignatureFlags(RUNTIME)
+using hardened runtime version 11.0.0 derived from SDK version
+code directory version: 132352
+creating cryptographic signature with certificate Developer ID Application: John Signer (deadbeef)
+Using time-stamp server http://timestamp.apple.com/ts01
+Using signing time 2024-01-01T00:00:00+00:00
+total signature size: [..] bytes
+writing Mach-O to MyApp.app.signed/Contents/Resources/non-nested-bin
+writing sealed resources to MyApp.app.signed/Contents/_CodeSignature/CodeResources
+signing main executable Contents/MacOS/MyApp
+setting main executable binary identifier to com.example.mybundle (derived from CFBundleIdentifier in Info.plist)
+inferring default signing settings from Mach-O binary
+signing Mach-O binary at index 0
+deriving code requirements from signing certificate
+deriving code requirements from signing certificate
+binary targets macOS >= 11.0.0 with SDK 11.0.0
+adding hardened runtime flag because notarization mode enabled
+adding code signature flags from signing settings: CodeSignatureFlags(RUNTIME)
+using hardened runtime version 11.0.0 derived from SDK version
+code directory version: 132352
+creating cryptographic signature with certificate Developer ID Application: John Signer (deadbeef)
+Using time-stamp server http://timestamp.apple.com/ts01
+Using signing time 2024-01-01T00:00:00+00:00
+total signature size: [..] bytes
+writing signed main executable to MyApp.app.signed/Contents/MacOS/MyApp
+
+```

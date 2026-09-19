@@ -1,0 +1,301 @@
+# We can force the use of specific digests.
+
+```
+$ rcodesign debug-create-macho exe
+assuming default minimum version 11.0.0
+writing Mach-O to exe
+
+$ rcodesign sign --digest sha1 exe exe.signed
+signing exe to exe.signed
+signing exe as a Mach-O binary
+setting binary identifier to exe
+parsing Mach-O
+writing Mach-O to exe.signed
+
+$ rcodesign print-signature-info exe.signed
+- path: exe.signed
+  file_size: 22544
+  file_sha256: cdc8997042da0032519411d23d678ca453932182c9544393268da381e0205246
+  entity:
+    mach_o:
+      macho_linkedit_start_offset: 16384 / 0x4000
+      macho_signature_start_offset: 16400 / 0x4010
+      macho_signature_end_offset: 16688 / 0x4130
+      macho_linkedit_end_offset: 22544 / 0x5810
+      macho_end_offset: 22544 / 0x5810
+      linkedit_signature_start_offset: 16 / 0x10
+      linkedit_signature_end_offset: 304 / 0x130
+      linkedit_bytes_after_signature: 5856 / 0x16e0
+      signature:
+        superblob_length: 288 / 0x120
+        blob_count: 3
+        blobs:
+        - slot: CodeDirectory (0)
+          magic: fade0c02
+          length: 232
+          sha1: 29a1f2cbaf1a20e9326d3a6ebffb436d6531c98f
+          sha256: 908cc01763cfb3f0479a270998b2b7e349d15d0ef6cf88dfbdf8c7b6f8f61bba
+        - slot: RequirementSet (2)
+          magic: fade0c01
+          length: 12
+          sha1: 3a75f6db058529148e14dd7ea1b4729cc09ec973
+          sha256: 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986
+        - slot: CMS Signature (65536)
+          magic: fade0b01
+          length: 8
+          sha1: 2a7254313aa41796079bb0e9d0f044345f69f98b
+          sha256: e6c83bc98a10348492c7d4d2378a54572ef29e1a5692ccd02b5e29f4b762d6a0
+        code_directory:
+          version: '0x20400'
+          flags: CodeSignatureFlags(ADHOC)
+          identifier: exe
+          digest_type: sha1
+          platform: 0
+          signed_entity_size: 16400
+          executable_segment_flags: ExecutableSegmentFlags(MAIN_BINARY)
+          code_digests_count: 5
+          slot_digests:
+          - 'Info (1): 0000000000000000000000000000000000000000'
+          - 'RequirementSet (2): 3a75f6db058529148e14dd7ea1b4729cc09ec973'
+        cms: null
+
+```
+
+```
+$ rcodesign debug-create-macho exe
+assuming default minimum version 11.0.0
+writing Mach-O to exe
+
+$ rcodesign sign --digest sha1 --digest sha256 exe exe.signed
+signing exe to exe.signed
+signing exe as a Mach-O binary
+setting binary identifier to exe
+parsing Mach-O
+writing Mach-O to exe.signed
+
+$ rcodesign print-signature-info exe.signed
+- path: exe.signed
+  file_size: 23568
+  file_sha256: 3e0e54e0e236947019d851382ebb65c3c4b7939e1c601dc981b8e88fa0e49ef7
+  entity:
+    mach_o:
+      macho_linkedit_start_offset: 16384 / 0x4000
+      macho_signature_start_offset: 16400 / 0x4010
+      macho_signature_end_offset: 17012 / 0x4274
+      macho_linkedit_end_offset: 23568 / 0x5c10
+      macho_end_offset: 23568 / 0x5c10
+      linkedit_signature_start_offset: 16 / 0x10
+      linkedit_signature_end_offset: 628 / 0x274
+      linkedit_bytes_after_signature: 6556 / 0x199c
+      signature:
+        superblob_length: 612 / 0x264
+        blob_count: 4
+        blobs:
+        - slot: CodeDirectory (0)
+          magic: fade0c02
+          length: 232
+          sha1: 4f4a745ee8a3dfe4f9de996f2aa1d6e71f8ad5e6
+          sha256: 518625e9dc0e38bf4f9be3dfb17070091a091e3643dc89215ae17feeac66069b
+        - slot: RequirementSet (2)
+          magic: fade0c01
+          length: 12
+          sha1: 3a75f6db058529148e14dd7ea1b4729cc09ec973
+          sha256: 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986
+        - slot: 'CodeDirectory Alternate #0 (4096)'
+          magic: fade0c02
+          length: 316
+          sha1: a222eac2fc2818e7d09eadcfef8800940f50ea4e
+          sha256: 226de56fa11db31547a694be8ec4ff1e592b3e554949865689fa444924f6a5d4
+        - slot: CMS Signature (65536)
+          magic: fade0b01
+          length: 8
+          sha1: 2a7254313aa41796079bb0e9d0f044345f69f98b
+          sha256: e6c83bc98a10348492c7d4d2378a54572ef29e1a5692ccd02b5e29f4b762d6a0
+        code_directory:
+          version: '0x20400'
+          flags: CodeSignatureFlags(ADHOC)
+          identifier: exe
+          digest_type: sha1
+          platform: 0
+          signed_entity_size: 16400
+          executable_segment_flags: ExecutableSegmentFlags(MAIN_BINARY)
+          code_digests_count: 5
+          slot_digests:
+          - 'Info (1): 0000000000000000000000000000000000000000'
+          - 'RequirementSet (2): 3a75f6db058529148e14dd7ea1b4729cc09ec973'
+        alternative_code_directories:
+        - - 'CodeDirectory Alternate #0 (4096)'
+          - version: '0x20400'
+            flags: CodeSignatureFlags(ADHOC)
+            identifier: exe
+            digest_type: sha256
+            platform: 0
+            signed_entity_size: 16400
+            executable_segment_flags: ExecutableSegmentFlags(MAIN_BINARY)
+            code_digests_count: 5
+            slot_digests:
+            - 'Info (1): 0000000000000000000000000000000000000000000000000000000000000000'
+            - 'RequirementSet (2): 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986'
+        cms: null
+
+```
+
+# Signing a binary supporting old macOS automatically adds SHA-1 digests.
+
+```
+$ rcodesign debug-create-macho --minimum-os-version 10.11.3 exe
+writing Mach-O to exe
+
+$ rcodesign sign exe exe.signed
+signing exe to exe.signed
+signing exe as a Mach-O binary
+setting binary identifier to exe
+parsing Mach-O
+writing Mach-O to exe.signed
+
+$ rcodesign print-signature-info exe.signed
+- path: exe.signed
+  file_size: 23568
+  file_sha256: 55c1916f7737031457bd6cf921e72de7a6060e6a5416cb398de373a429df35cd
+  entity:
+    mach_o:
+      macho_linkedit_start_offset: 16384 / 0x4000
+      macho_signature_start_offset: 16400 / 0x4010
+      macho_signature_end_offset: 17012 / 0x4274
+      macho_linkedit_end_offset: 23568 / 0x5c10
+      macho_end_offset: 23568 / 0x5c10
+      linkedit_signature_start_offset: 16 / 0x10
+      linkedit_signature_end_offset: 628 / 0x274
+      linkedit_bytes_after_signature: 6556 / 0x199c
+      signature:
+        superblob_length: 612 / 0x264
+        blob_count: 4
+        blobs:
+        - slot: CodeDirectory (0)
+          magic: fade0c02
+          length: 232
+          sha1: 924ad4febb532fcc1768161281b840747b312bd5
+          sha256: 0e4ae94cde8c28c6d0e1c156618602d99ad13661de603df665262a126987eaf2
+        - slot: RequirementSet (2)
+          magic: fade0c01
+          length: 12
+          sha1: 3a75f6db058529148e14dd7ea1b4729cc09ec973
+          sha256: 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986
+        - slot: 'CodeDirectory Alternate #0 (4096)'
+          magic: fade0c02
+          length: 316
+          sha1: 3541576a4eb2b0474bc59c614d2e3fe2459aae0b
+          sha256: aaafdd1ab8ef8ae97c11f8501a5cd923899657424f065be1b4e91941c4b803ba
+        - slot: CMS Signature (65536)
+          magic: fade0b01
+          length: 8
+          sha1: 2a7254313aa41796079bb0e9d0f044345f69f98b
+          sha256: e6c83bc98a10348492c7d4d2378a54572ef29e1a5692ccd02b5e29f4b762d6a0
+        code_directory:
+          version: '0x20400'
+          flags: CodeSignatureFlags(ADHOC)
+          identifier: exe
+          digest_type: sha1
+          platform: 0
+          signed_entity_size: 16400
+          executable_segment_flags: ExecutableSegmentFlags(MAIN_BINARY)
+          code_digests_count: 5
+          slot_digests:
+          - 'Info (1): 0000000000000000000000000000000000000000'
+          - 'RequirementSet (2): 3a75f6db058529148e14dd7ea1b4729cc09ec973'
+        alternative_code_directories:
+        - - 'CodeDirectory Alternate #0 (4096)'
+          - version: '0x20400'
+            flags: CodeSignatureFlags(ADHOC)
+            identifier: exe
+            digest_type: sha256
+            platform: 0
+            signed_entity_size: 16400
+            executable_segment_flags: ExecutableSegmentFlags(MAIN_BINARY)
+            code_digests_count: 5
+            slot_digests:
+            - 'Info (1): 0000000000000000000000000000000000000000000000000000000000000000'
+            - 'RequirementSet (2): 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986'
+        cms: null
+
+```
+
+Signing a binary without Mach-O targeting adds SHA-1 digests
+
+```
+$ rcodesign debug-create-macho --no-targeting exe
+writing Mach-O to exe
+
+$ rcodesign sign exe exe.signed
+signing exe to exe.signed
+signing exe as a Mach-O binary
+setting binary identifier to exe
+parsing Mach-O
+writing Mach-O to exe.signed
+
+$ rcodesign print-signature-info exe.signed
+- path: exe.signed
+  file_size: 23568
+  file_sha256: 188bcc6537912c2fa3b7db65d6ccec0053d0d680b35a0a3a18c7cfe0bee56687
+  entity:
+    mach_o:
+      macho_linkedit_start_offset: 16384 / 0x4000
+      macho_signature_start_offset: 16400 / 0x4010
+      macho_signature_end_offset: 17012 / 0x4274
+      macho_linkedit_end_offset: 23568 / 0x5c10
+      macho_end_offset: 23568 / 0x5c10
+      linkedit_signature_start_offset: 16 / 0x10
+      linkedit_signature_end_offset: 628 / 0x274
+      linkedit_bytes_after_signature: 6556 / 0x199c
+      signature:
+        superblob_length: 612 / 0x264
+        blob_count: 4
+        blobs:
+        - slot: CodeDirectory (0)
+          magic: fade0c02
+          length: 232
+          sha1: 065debcf801fabfb5915636fd16f4a7018da2f40
+          sha256: fa9a4ab20228af9d52544f9f021e8d3bd02b9a8bc38ebcd3787b167d41189ffc
+        - slot: RequirementSet (2)
+          magic: fade0c01
+          length: 12
+          sha1: 3a75f6db058529148e14dd7ea1b4729cc09ec973
+          sha256: 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986
+        - slot: 'CodeDirectory Alternate #0 (4096)'
+          magic: fade0c02
+          length: 316
+          sha1: 7fb8e0032e6368d4456cd1c0fc148a02f030b610
+          sha256: 6b30a1e0f8780390d0ca3276cac2e0b3ae498d3b8986cc127cd4565314b07750
+        - slot: CMS Signature (65536)
+          magic: fade0b01
+          length: 8
+          sha1: 2a7254313aa41796079bb0e9d0f044345f69f98b
+          sha256: e6c83bc98a10348492c7d4d2378a54572ef29e1a5692ccd02b5e29f4b762d6a0
+        code_directory:
+          version: '0x20400'
+          flags: CodeSignatureFlags(ADHOC)
+          identifier: exe
+          digest_type: sha1
+          platform: 0
+          signed_entity_size: 16400
+          executable_segment_flags: ExecutableSegmentFlags(MAIN_BINARY)
+          code_digests_count: 5
+          slot_digests:
+          - 'Info (1): 0000000000000000000000000000000000000000'
+          - 'RequirementSet (2): 3a75f6db058529148e14dd7ea1b4729cc09ec973'
+        alternative_code_directories:
+        - - 'CodeDirectory Alternate #0 (4096)'
+          - version: '0x20400'
+            flags: CodeSignatureFlags(ADHOC)
+            identifier: exe
+            digest_type: sha256
+            platform: 0
+            signed_entity_size: 16400
+            executable_segment_flags: ExecutableSegmentFlags(MAIN_BINARY)
+            code_digests_count: 5
+            slot_digests:
+            - 'Info (1): 0000000000000000000000000000000000000000000000000000000000000000'
+            - 'RequirementSet (2): 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986'
+        cms: null
+
+```

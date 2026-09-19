@@ -1,0 +1,116 @@
+```
+$ rcodesign debug-create-macho --architecture aarch64 exe.aarch64
+assuming default minimum version 11.0.0
+writing Mach-O to exe.aarch64
+
+$ rcodesign debug-create-macho --architecture x86-64 exe.x86-64
+assuming default minimum version 11.0.0
+writing Mach-O to exe.x86-64
+
+$ rcodesign macho-universal-create -o exe exe.aarch64 exe.x86-64
+adding exe.aarch64
+adding exe.x86-64
+writing exe
+
+$ rcodesign sign exe exe.signed
+signing exe to exe.signed
+signing exe as a Mach-O binary
+setting binary identifier to exe
+parsing Mach-O
+writing Mach-O to exe.signed
+
+$ rcodesign print-signature-info exe.signed
+- path: exe.signed
+  file_size: 59408
+  file_sha256: 70b20ec49527789389cd366af42fbb018551ec96a73d4798fe33d55701695ef3
+  sub_path: macho-index:0
+  entity:
+    mach_o:
+      macho_linkedit_start_offset: 16384 / 0x4000
+      macho_signature_start_offset: 16400 / 0x4010
+      macho_signature_end_offset: 16772 / 0x4184
+      macho_linkedit_end_offset: 22544 / 0x5810
+      macho_end_offset: 22544 / 0x5810
+      linkedit_signature_start_offset: 16 / 0x10
+      linkedit_signature_end_offset: 388 / 0x184
+      linkedit_bytes_after_signature: 5772 / 0x168c
+      signature:
+        superblob_length: 372 / 0x174
+        blob_count: 3
+        blobs:
+        - slot: CodeDirectory (0)
+          magic: fade0c02
+          length: 316
+          sha1: 4ca6f9ee2bfe2bfac44ab4e9e9c1ef9b6e4fc0de
+          sha256: 23fc7207e52f23c0f6d2317dbb92cf9eff2aca8fe61ac241900d48be8f46cf5c
+        - slot: RequirementSet (2)
+          magic: fade0c01
+          length: 12
+          sha1: 3a75f6db058529148e14dd7ea1b4729cc09ec973
+          sha256: 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986
+        - slot: CMS Signature (65536)
+          magic: fade0b01
+          length: 8
+          sha1: 2a7254313aa41796079bb0e9d0f044345f69f98b
+          sha256: e6c83bc98a10348492c7d4d2378a54572ef29e1a5692ccd02b5e29f4b762d6a0
+        code_directory:
+          version: '0x20400'
+          flags: CodeSignatureFlags(ADHOC)
+          identifier: exe
+          digest_type: sha256
+          platform: 0
+          signed_entity_size: 16400
+          executable_segment_flags: ExecutableSegmentFlags(MAIN_BINARY)
+          code_digests_count: 5
+          slot_digests:
+          - 'Info (1): 0000000000000000000000000000000000000000000000000000000000000000'
+          - 'RequirementSet (2): 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986'
+        cms: null
+- path: exe.signed
+  file_size: 59408
+  file_sha256: 70b20ec49527789389cd366af42fbb018551ec96a73d4798fe33d55701695ef3
+  sub_path: macho-index:1
+  entity:
+    mach_o:
+      macho_linkedit_start_offset: 4096 / 0x1000
+      macho_signature_start_offset: 4112 / 0x1010
+      macho_signature_end_offset: 4388 / 0x1124
+      macho_linkedit_end_offset: 10256 / 0x2810
+      macho_end_offset: 10256 / 0x2810
+      linkedit_signature_start_offset: 16 / 0x10
+      linkedit_signature_end_offset: 292 / 0x124
+      linkedit_bytes_after_signature: 5868 / 0x16ec
+      signature:
+        superblob_length: 276 / 0x114
+        blob_count: 3
+        blobs:
+        - slot: CodeDirectory (0)
+          magic: fade0c02
+          length: 220
+          sha1: a2d752af585c67bf99ffa874a67c87013d27a42b
+          sha256: c33301d0689076699ca6fcb89113bc376dfd2439d8acbd3ed826ee2ee80ade5e
+        - slot: RequirementSet (2)
+          magic: fade0c01
+          length: 12
+          sha1: 3a75f6db058529148e14dd7ea1b4729cc09ec973
+          sha256: 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986
+        - slot: CMS Signature (65536)
+          magic: fade0b01
+          length: 8
+          sha1: 2a7254313aa41796079bb0e9d0f044345f69f98b
+          sha256: e6c83bc98a10348492c7d4d2378a54572ef29e1a5692ccd02b5e29f4b762d6a0
+        code_directory:
+          version: '0x20400'
+          flags: CodeSignatureFlags(ADHOC)
+          identifier: exe
+          digest_type: sha256
+          platform: 0
+          signed_entity_size: 4112
+          executable_segment_flags: ExecutableSegmentFlags(MAIN_BINARY)
+          code_digests_count: 2
+          slot_digests:
+          - 'Info (1): 0000000000000000000000000000000000000000000000000000000000000000'
+          - 'RequirementSet (2): 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986'
+        cms: null
+
+```

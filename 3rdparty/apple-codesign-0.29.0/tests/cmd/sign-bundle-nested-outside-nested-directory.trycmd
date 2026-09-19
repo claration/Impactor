@@ -1,0 +1,1332 @@
+A child bundle can exist outside a directory marked as "nested" in the
+CodeResources rules set. In this case, the child bundle is treated like
+a regular directory and not signed as a bundle.
+
+But when signing in non-shallow mode, we need to avoid signing Mach-O
+binaries in the child bundle because they would have already been signed
+as part of signing the child bundle.
+
+This test is inspired from #149.
+
+```
+$ rcodesign debug-create-macho MyApp.app/Contents/MacOS/MyApp
+assuming default minimum version 11.0.0
+writing Mach-O to MyApp.app/Contents/MacOS/MyApp
+
+$ rcodesign debug-create-info-plist --bundle-name MyApp MyApp.app/Contents/Info.plist
+writing MyApp.app/Contents/Info.plist
+
+$ rcodesign debug-create-macho MyApp.app/Contents/lib/foo/exe
+assuming default minimum version 11.0.0
+writing Mach-O to MyApp.app/Contents/lib/foo/exe
+
+$ rcodesign debug-create-macho MyApp.app/Contents/lib/foo/child.app/Contents/MacOS/child
+assuming default minimum version 11.0.0
+writing Mach-O to MyApp.app/Contents/lib/foo/child.app/Contents/MacOS/child
+
+$ rcodesign debug-create-info-plist --bundle-name child MyApp.app/Contents/lib/foo/child.app/Contents/Info.plist
+writing MyApp.app/Contents/lib/foo/child.app/Contents/Info.plist
+
+$ rcodesign debug-create-macho MyApp.app/Contents/lib/foo/child.app/Contents/MacOS/extra-exe
+assuming default minimum version 11.0.0
+writing Mach-O to MyApp.app/Contents/lib/foo/child.app/Contents/MacOS/extra-exe
+
+$ rcodesign sign MyApp.app MyApp.app.signed
+signing MyApp.app to MyApp.app.signed
+signing bundle at MyApp.app
+signing 1 nested bundles in the following order:
+Contents/lib/foo/child.app
+entering nested bundle Contents/lib/foo/child.app
+signing bundle at MyApp.app/Contents/lib/foo/child.app into MyApp.app.signed/Contents/lib/foo/child.app
+signing Mach-O file Contents/MacOS/extra-exe
+signing main executable Contents/MacOS/child
+leaving nested bundle Contents/lib/foo/child.app
+signing bundle at MyApp.app into MyApp.app.signed
+signing Mach-O file Contents/lib/foo/exe
+signing main executable Contents/MacOS/MyApp
+
+$ rcodesign debug-file-tree MyApp.app.signed
+d                      MyApp.app.signed/
+d                      MyApp.app.signed/Contents
+f 0a5902dc8e47f490d038 MyApp.app.signed/Contents/Info.plist
+d                      MyApp.app.signed/Contents/MacOS
+f c106af767c277207a6ad MyApp.app.signed/Contents/MacOS/MyApp
+d                      MyApp.app.signed/Contents/_CodeSignature
+f ade78fe52d723803b6cf MyApp.app.signed/Contents/_CodeSignature/CodeResources
+d                      MyApp.app.signed/Contents/lib
+d                      MyApp.app.signed/Contents/lib/foo
+d                      MyApp.app.signed/Contents/lib/foo/child.app
+d                      MyApp.app.signed/Contents/lib/foo/child.app/Contents
+f 4c5130ae58d7184aa747 MyApp.app.signed/Contents/lib/foo/child.app/Contents/Info.plist
+d                      MyApp.app.signed/Contents/lib/foo/child.app/Contents/MacOS
+f 8d2bb481b183bd66403b MyApp.app.signed/Contents/lib/foo/child.app/Contents/MacOS/child
+f d4637e70eed799f72544 MyApp.app.signed/Contents/lib/foo/child.app/Contents/MacOS/extra-exe
+d                      MyApp.app.signed/Contents/lib/foo/child.app/Contents/_CodeSignature
+f 164aae2ea1c61b76cd81 MyApp.app.signed/Contents/lib/foo/child.app/Contents/_CodeSignature/CodeResources
+f 2adcd25a21eb14fc3f7b MyApp.app.signed/Contents/lib/foo/exe
+
+$ rcodesign print-signature-info MyApp.app.signed
+- path: Contents/Info.plist
+  file_size: 576
+  file_sha256: 0a5902dc8e47f490d03889d3593d17bddbf79e6c1f79494e20dd28f9459effa5
+  entity: other
+- path: Contents/MacOS/MyApp
+  file_size: 22544
+  file_sha256: c106af767c277207a6adf0bac84ba1caa5b510fd11db5f3ec7dcc0830bed66b1
+  entity:
+    mach_o:
+      macho_linkedit_start_offset: 16384 / 0x4000
+      macho_signature_start_offset: 16400 / 0x4010
+      macho_signature_end_offset: 16821 / 0x41b5
+      macho_linkedit_end_offset: 22544 / 0x5810
+      macho_end_offset: 22544 / 0x5810
+      linkedit_signature_start_offset: 16 / 0x10
+      linkedit_signature_end_offset: 437 / 0x1b5
+      linkedit_bytes_after_signature: 5723 / 0x165b
+      signature:
+        superblob_length: 421 / 0x1a5
+        blob_count: 3
+        blobs:
+        - slot: CodeDirectory (0)
+          magic: fade0c02
+          length: 365
+          sha1: 807803de9fec161102ccaa46c27047bfff1d6af1
+          sha256: 88b6f97438eb59baad281e3cb35e7621bead272852380b058fc73ea90c78353f
+        - slot: RequirementSet (2)
+          magic: fade0c01
+          length: 12
+          sha1: 3a75f6db058529148e14dd7ea1b4729cc09ec973
+          sha256: 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986
+        - slot: CMS Signature (65536)
+          magic: fade0b01
+          length: 8
+          sha1: 2a7254313aa41796079bb0e9d0f044345f69f98b
+          sha256: e6c83bc98a10348492c7d4d2378a54572ef29e1a5692ccd02b5e29f4b762d6a0
+        code_directory:
+          version: '0x20400'
+          flags: CodeSignatureFlags(ADHOC)
+          identifier: com.example.mybundle
+          digest_type: sha256
+          platform: 0
+          signed_entity_size: 16400
+          executable_segment_flags: ExecutableSegmentFlags(MAIN_BINARY)
+          code_digests_count: 5
+          slot_digests:
+          - 'Info (1): 0a5902dc8e47f490d03889d3593d17bddbf79e6c1f79494e20dd28f9459effa5'
+          - 'RequirementSet (2): 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986'
+          - 'Resources (3): ade78fe52d723803b6cf8398715169db305938bbaaf08b9d185a64211bd27e6d'
+        cms: null
+- path: Contents/_CodeSignature/CodeResources
+  file_size: 2824
+  file_sha256: ade78fe52d723803b6cf8398715169db305938bbaaf08b9d185a64211bd27e6d
+  entity:
+    bundle_code_signature_file: !ResourcesXml
+    - <?xml version="1.0" encoding="UTF-8"?>
+    - <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+    - <plist version="1.0">
+    - <dict>
+    - '  <key>files</key>'
+    - '  <dict/>'
+    - '  <key>files2</key>'
+    - '  <dict>'
+    - '    <key>lib/foo/child.app/Contents/Info.plist</key>'
+    - '    <dict>'
+    - '      <key>hash2</key>'
+    - '      <data>'
+    - '      TFEwrljXGEqnR7LZD/HiHXVCvWvV3ZQjm+Lphz/9pZ4='
+    - '      </data>'
+    - '    </dict>'
+    - '    <key>lib/foo/child.app/Contents/MacOS/child</key>'
+    - '    <dict>'
+    - '      <key>hash2</key>'
+    - '      <data>'
+    - '      jSu0gbGDvWZAO21MEqe6C7r9WFbXmTMk+kW/f203LT8='
+    - '      </data>'
+    - '    </dict>'
+    - '    <key>lib/foo/child.app/Contents/MacOS/extra-exe</key>'
+    - '    <dict>'
+    - '      <key>hash2</key>'
+    - '      <data>'
+    - '      1GN+cO7XmfclRNEqlCdbwEu89NOQkcykJmFIUAsxj6g='
+    - '      </data>'
+    - '    </dict>'
+    - '    <key>lib/foo/exe</key>'
+    - '    <dict>'
+    - '      <key>hash2</key>'
+    - '      <data>'
+    - '      KtzSWiHrFPw/e1yk9UZbUV8hk53ZhD3lv32eP3rPqds='
+    - '      </data>'
+    - '    </dict>'
+    - '  </dict>'
+    - '  <key>rules</key>'
+    - '  <dict>'
+    - '    <key>^Resources/</key>'
+    - '    <true/>'
+    - '    <key>^Resources/.*/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>optional</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1000</real>'
+    - '    </dict>'
+    - '    <key>^Resources/.*/.lproj/locversion.plist$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1100</real>'
+    - '    </dict>'
+    - '    <key>^Resources/Base/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>1010</real>'
+    - '    </dict>'
+    - '    <key>^version.plist$</key>'
+    - '    <true/>'
+    - '  </dict>'
+    - '  <key>rules2</key>'
+    - '  <dict>'
+    - '    <key>.*/.dSYM($|/)</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>11</real>'
+    - '    </dict>'
+    - '    <key>^(.*/)?/.DS_Store$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>2000</real>'
+    - '    </dict>'
+    - '    <key>^(Frameworks|SharedFrameworks|PlugIns|Plug-ins|XPCServices|Helpers|MacOS|Library/(Automator|Spotlight|LoginItems))/</key>'
+    - '    <dict>'
+    - '      <key>nested</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>10</real>'
+    - '    </dict>'
+    - '    <key>^.*</key>'
+    - '    <true/>'
+    - '    <key>^Info/.plist$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^PkgInfo$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^Resources/</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^Resources/.*/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>optional</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1000</real>'
+    - '    </dict>'
+    - '    <key>^Resources/.*/.lproj/locversion.plist$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1100</real>'
+    - '    </dict>'
+    - '    <key>^Resources/Base/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>1010</real>'
+    - '    </dict>'
+    - '    <key>^[^/]+$</key>'
+    - '    <dict>'
+    - '      <key>nested</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>10</real>'
+    - '    </dict>'
+    - '    <key>^embedded/.provisionprofile$</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^version/.plist$</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '  </dict>'
+    - </dict>
+    - </plist>
+    - ''
+- path: Contents/lib/foo/child.app/Contents/Info.plist
+  file_size: 576
+  file_sha256: 4c5130ae58d7184aa747b2d90ff1e21d7542bd6bd5dd94239be2e9873ffda59e
+  entity: other
+- path: Contents/lib/foo/child.app/Contents/MacOS/child
+  file_size: 22544
+  file_sha256: 8d2bb481b183bd66403b6d4c12a7ba0bbafd5856d7993324fa45bf7f6d372d3f
+  entity:
+    mach_o:
+      macho_linkedit_start_offset: 16384 / 0x4000
+      macho_signature_start_offset: 16400 / 0x4010
+      macho_signature_end_offset: 16821 / 0x41b5
+      macho_linkedit_end_offset: 22544 / 0x5810
+      macho_end_offset: 22544 / 0x5810
+      linkedit_signature_start_offset: 16 / 0x10
+      linkedit_signature_end_offset: 437 / 0x1b5
+      linkedit_bytes_after_signature: 5723 / 0x165b
+      signature:
+        superblob_length: 421 / 0x1a5
+        blob_count: 3
+        blobs:
+        - slot: CodeDirectory (0)
+          magic: fade0c02
+          length: 365
+          sha1: da2d1d20b15073dc7c0ea2b9bdf0265b1c60b9d7
+          sha256: 5df5b910c1b35258c22d107a13dccdfad7f747d4c1d6726d72b54c264de1bd40
+        - slot: RequirementSet (2)
+          magic: fade0c01
+          length: 12
+          sha1: 3a75f6db058529148e14dd7ea1b4729cc09ec973
+          sha256: 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986
+        - slot: CMS Signature (65536)
+          magic: fade0b01
+          length: 8
+          sha1: 2a7254313aa41796079bb0e9d0f044345f69f98b
+          sha256: e6c83bc98a10348492c7d4d2378a54572ef29e1a5692ccd02b5e29f4b762d6a0
+        code_directory:
+          version: '0x20400'
+          flags: CodeSignatureFlags(ADHOC)
+          identifier: com.example.mybundle
+          digest_type: sha256
+          platform: 0
+          signed_entity_size: 16400
+          executable_segment_flags: ExecutableSegmentFlags(MAIN_BINARY)
+          code_digests_count: 5
+          slot_digests:
+          - 'Info (1): 4c5130ae58d7184aa747b2d90ff1e21d7542bd6bd5dd94239be2e9873ffda59e'
+          - 'RequirementSet (2): 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986'
+          - 'Resources (3): 164aae2ea1c61b76cd8120aceaa7ab635c0a01514682e049bdde384d788fb677'
+        cms: null
+- path: Contents/lib/foo/child.app/Contents/MacOS/extra-exe
+  file_size: 22544
+  file_sha256: d4637e70eed799f72544d12a94275bc04bbcf4d39091cca4266148500b318fa8
+  entity:
+    mach_o:
+      macho_linkedit_start_offset: 16384 / 0x4000
+      macho_signature_start_offset: 16400 / 0x4010
+      macho_signature_end_offset: 16778 / 0x418a
+      macho_linkedit_end_offset: 22544 / 0x5810
+      macho_end_offset: 22544 / 0x5810
+      linkedit_signature_start_offset: 16 / 0x10
+      linkedit_signature_end_offset: 394 / 0x18a
+      linkedit_bytes_after_signature: 5766 / 0x1686
+      signature:
+        superblob_length: 378 / 0x17a
+        blob_count: 3
+        blobs:
+        - slot: CodeDirectory (0)
+          magic: fade0c02
+          length: 322
+          sha1: 99068332ebb6b9cc3d9c9534835a7f6c12c434ee
+          sha256: feb5492886d3537f86aead02ebd705a5a4eec2e656c28357a20fd814a34d8c06
+        - slot: RequirementSet (2)
+          magic: fade0c01
+          length: 12
+          sha1: 3a75f6db058529148e14dd7ea1b4729cc09ec973
+          sha256: 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986
+        - slot: CMS Signature (65536)
+          magic: fade0b01
+          length: 8
+          sha1: 2a7254313aa41796079bb0e9d0f044345f69f98b
+          sha256: e6c83bc98a10348492c7d4d2378a54572ef29e1a5692ccd02b5e29f4b762d6a0
+        code_directory:
+          version: '0x20400'
+          flags: CodeSignatureFlags(ADHOC)
+          identifier: extra-exe
+          digest_type: sha256
+          platform: 0
+          signed_entity_size: 16400
+          executable_segment_flags: ExecutableSegmentFlags(MAIN_BINARY)
+          code_digests_count: 5
+          slot_digests:
+          - 'Info (1): 0000000000000000000000000000000000000000000000000000000000000000'
+          - 'RequirementSet (2): 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986'
+        cms: null
+- path: Contents/lib/foo/child.app/Contents/_CodeSignature/CodeResources
+  file_size: 2427
+  file_sha256: 164aae2ea1c61b76cd8120aceaa7ab635c0a01514682e049bdde384d788fb677
+  entity:
+    bundle_code_signature_file: !ResourcesXml
+    - <?xml version="1.0" encoding="UTF-8"?>
+    - <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+    - <plist version="1.0">
+    - <dict>
+    - '  <key>files</key>'
+    - '  <dict/>'
+    - '  <key>files2</key>'
+    - '  <dict>'
+    - '    <key>MacOS/extra-exe</key>'
+    - '    <dict>'
+    - '      <key>cdhash</key>'
+    - '      <data>'
+    - '      /rVJKIbTU3+Grq0C69cFpaTuwuY='
+    - '      </data>'
+    - '      <key>requirement</key>'
+    - '      <string>cdhash H"feb5492886d3537f86aead02ebd705a5a4eec2e6"</string>'
+    - '    </dict>'
+    - '  </dict>'
+    - '  <key>rules</key>'
+    - '  <dict>'
+    - '    <key>^Resources/</key>'
+    - '    <true/>'
+    - '    <key>^Resources/.*/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>optional</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1000</real>'
+    - '    </dict>'
+    - '    <key>^Resources/.*/.lproj/locversion.plist$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1100</real>'
+    - '    </dict>'
+    - '    <key>^Resources/Base/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>1010</real>'
+    - '    </dict>'
+    - '    <key>^version.plist$</key>'
+    - '    <true/>'
+    - '  </dict>'
+    - '  <key>rules2</key>'
+    - '  <dict>'
+    - '    <key>.*/.dSYM($|/)</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>11</real>'
+    - '    </dict>'
+    - '    <key>^(.*/)?/.DS_Store$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>2000</real>'
+    - '    </dict>'
+    - '    <key>^(Frameworks|SharedFrameworks|PlugIns|Plug-ins|XPCServices|Helpers|MacOS|Library/(Automator|Spotlight|LoginItems))/</key>'
+    - '    <dict>'
+    - '      <key>nested</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>10</real>'
+    - '    </dict>'
+    - '    <key>^.*</key>'
+    - '    <true/>'
+    - '    <key>^Info/.plist$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^PkgInfo$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^Resources/</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^Resources/.*/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>optional</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1000</real>'
+    - '    </dict>'
+    - '    <key>^Resources/.*/.lproj/locversion.plist$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1100</real>'
+    - '    </dict>'
+    - '    <key>^Resources/Base/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>1010</real>'
+    - '    </dict>'
+    - '    <key>^[^/]+$</key>'
+    - '    <dict>'
+    - '      <key>nested</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>10</real>'
+    - '    </dict>'
+    - '    <key>^embedded/.provisionprofile$</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^version/.plist$</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '  </dict>'
+    - </dict>
+    - </plist>
+    - ''
+- path: Contents/lib/foo/exe
+  file_size: 22544
+  file_sha256: 2adcd25a21eb14fc3f7b5ca4f5465b515f21939dd9843de5bf7d9e3f7acfa9db
+  entity:
+    mach_o:
+      macho_linkedit_start_offset: 16384 / 0x4000
+      macho_signature_start_offset: 16400 / 0x4010
+      macho_signature_end_offset: 16772 / 0x4184
+      macho_linkedit_end_offset: 22544 / 0x5810
+      macho_end_offset: 22544 / 0x5810
+      linkedit_signature_start_offset: 16 / 0x10
+      linkedit_signature_end_offset: 388 / 0x184
+      linkedit_bytes_after_signature: 5772 / 0x168c
+      signature:
+        superblob_length: 372 / 0x174
+        blob_count: 3
+        blobs:
+        - slot: CodeDirectory (0)
+          magic: fade0c02
+          length: 316
+          sha1: 4ca6f9ee2bfe2bfac44ab4e9e9c1ef9b6e4fc0de
+          sha256: 23fc7207e52f23c0f6d2317dbb92cf9eff2aca8fe61ac241900d48be8f46cf5c
+        - slot: RequirementSet (2)
+          magic: fade0c01
+          length: 12
+          sha1: 3a75f6db058529148e14dd7ea1b4729cc09ec973
+          sha256: 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986
+        - slot: CMS Signature (65536)
+          magic: fade0b01
+          length: 8
+          sha1: 2a7254313aa41796079bb0e9d0f044345f69f98b
+          sha256: e6c83bc98a10348492c7d4d2378a54572ef29e1a5692ccd02b5e29f4b762d6a0
+        code_directory:
+          version: '0x20400'
+          flags: CodeSignatureFlags(ADHOC)
+          identifier: exe
+          digest_type: sha256
+          platform: 0
+          signed_entity_size: 16400
+          executable_segment_flags: ExecutableSegmentFlags(MAIN_BINARY)
+          code_digests_count: 5
+          slot_digests:
+          - 'Info (1): 0000000000000000000000000000000000000000000000000000000000000000'
+          - 'RequirementSet (2): 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986'
+        cms: null
+
+$ rcodesign sign --shallow MyApp.app MyApp.app.signed-shallow
+signing MyApp.app to MyApp.app.signed-shallow
+signing bundle at MyApp.app
+1 nested bundles will be copied instead of signed because shallow signing enabled:
+Contents/lib/foo/child.app
+entering nested bundle Contents/lib/foo/child.app
+shallow signing enabled; bundle will be copied instead of signed
+leaving nested bundle Contents/lib/foo/child.app
+signing bundle at MyApp.app into MyApp.app.signed-shallow
+signing main executable Contents/MacOS/MyApp
+
+$ rcodesign debug-file-tree MyApp.app.signed-shallow
+d                      MyApp.app.signed-shallow/
+d                      MyApp.app.signed-shallow/Contents
+f 0a5902dc8e47f490d038 MyApp.app.signed-shallow/Contents/Info.plist
+d                      MyApp.app.signed-shallow/Contents/MacOS
+f ec0736200e9c8dc64954 MyApp.app.signed-shallow/Contents/MacOS/MyApp
+d                      MyApp.app.signed-shallow/Contents/_CodeSignature
+f 90443605a8872c4b12b6 MyApp.app.signed-shallow/Contents/_CodeSignature/CodeResources
+d                      MyApp.app.signed-shallow/Contents/lib
+d                      MyApp.app.signed-shallow/Contents/lib/foo
+d                      MyApp.app.signed-shallow/Contents/lib/foo/child.app
+d                      MyApp.app.signed-shallow/Contents/lib/foo/child.app/Contents
+f 4c5130ae58d7184aa747 MyApp.app.signed-shallow/Contents/lib/foo/child.app/Contents/Info.plist
+d                      MyApp.app.signed-shallow/Contents/lib/foo/child.app/Contents/MacOS
+f 4cfaf70bc9fb6827fcf7 MyApp.app.signed-shallow/Contents/lib/foo/child.app/Contents/MacOS/child
+f 4cfaf70bc9fb6827fcf7 MyApp.app.signed-shallow/Contents/lib/foo/child.app/Contents/MacOS/extra-exe
+f 4cfaf70bc9fb6827fcf7 MyApp.app.signed-shallow/Contents/lib/foo/exe
+
+$ rcodesign print-signature-info MyApp.app.signed-shallow
+- path: Contents/Info.plist
+  file_size: 576
+  file_sha256: 0a5902dc8e47f490d03889d3593d17bddbf79e6c1f79494e20dd28f9459effa5
+  entity: other
+- path: Contents/MacOS/MyApp
+  file_size: 22544
+  file_sha256: ec0736200e9c8dc64954a17c80f6ed556e5bc4795120a24f2fae5490a6cdc1b4
+  entity:
+    mach_o:
+      macho_linkedit_start_offset: 16384 / 0x4000
+      macho_signature_start_offset: 16400 / 0x4010
+      macho_signature_end_offset: 16821 / 0x41b5
+      macho_linkedit_end_offset: 22544 / 0x5810
+      macho_end_offset: 22544 / 0x5810
+      linkedit_signature_start_offset: 16 / 0x10
+      linkedit_signature_end_offset: 437 / 0x1b5
+      linkedit_bytes_after_signature: 5723 / 0x165b
+      signature:
+        superblob_length: 421 / 0x1a5
+        blob_count: 3
+        blobs:
+        - slot: CodeDirectory (0)
+          magic: fade0c02
+          length: 365
+          sha1: 91fbe54adddc8de02772732e2eed09cde141c39c
+          sha256: c06b7ef1263aea0fd7b10cadb9f1557ef1d3117662b839499da4a3529d99fcd3
+        - slot: RequirementSet (2)
+          magic: fade0c01
+          length: 12
+          sha1: 3a75f6db058529148e14dd7ea1b4729cc09ec973
+          sha256: 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986
+        - slot: CMS Signature (65536)
+          magic: fade0b01
+          length: 8
+          sha1: 2a7254313aa41796079bb0e9d0f044345f69f98b
+          sha256: e6c83bc98a10348492c7d4d2378a54572ef29e1a5692ccd02b5e29f4b762d6a0
+        code_directory:
+          version: '0x20400'
+          flags: CodeSignatureFlags(ADHOC)
+          identifier: com.example.mybundle
+          digest_type: sha256
+          platform: 0
+          signed_entity_size: 16400
+          executable_segment_flags: ExecutableSegmentFlags(MAIN_BINARY)
+          code_digests_count: 5
+          slot_digests:
+          - 'Info (1): 0a5902dc8e47f490d03889d3593d17bddbf79e6c1f79494e20dd28f9459effa5'
+          - 'RequirementSet (2): 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986'
+          - 'Resources (3): 90443605a8872c4b12b6b0a86cd50b2e5101b245e156ee3d3a8787686b77aa92'
+        cms: null
+- path: Contents/_CodeSignature/CodeResources
+  file_size: 2824
+  file_sha256: 90443605a8872c4b12b6b0a86cd50b2e5101b245e156ee3d3a8787686b77aa92
+  entity:
+    bundle_code_signature_file: !ResourcesXml
+    - <?xml version="1.0" encoding="UTF-8"?>
+    - <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+    - <plist version="1.0">
+    - <dict>
+    - '  <key>files</key>'
+    - '  <dict/>'
+    - '  <key>files2</key>'
+    - '  <dict>'
+    - '    <key>lib/foo/child.app/Contents/Info.plist</key>'
+    - '    <dict>'
+    - '      <key>hash2</key>'
+    - '      <data>'
+    - '      TFEwrljXGEqnR7LZD/HiHXVCvWvV3ZQjm+Lphz/9pZ4='
+    - '      </data>'
+    - '    </dict>'
+    - '    <key>lib/foo/child.app/Contents/MacOS/child</key>'
+    - '    <dict>'
+    - '      <key>hash2</key>'
+    - '      <data>'
+    - '      TPr3C8n7aCf893Ud6vZfi1TUb+y285yyuo+882kSQww='
+    - '      </data>'
+    - '    </dict>'
+    - '    <key>lib/foo/child.app/Contents/MacOS/extra-exe</key>'
+    - '    <dict>'
+    - '      <key>hash2</key>'
+    - '      <data>'
+    - '      TPr3C8n7aCf893Ud6vZfi1TUb+y285yyuo+882kSQww='
+    - '      </data>'
+    - '    </dict>'
+    - '    <key>lib/foo/exe</key>'
+    - '    <dict>'
+    - '      <key>hash2</key>'
+    - '      <data>'
+    - '      TPr3C8n7aCf893Ud6vZfi1TUb+y285yyuo+882kSQww='
+    - '      </data>'
+    - '    </dict>'
+    - '  </dict>'
+    - '  <key>rules</key>'
+    - '  <dict>'
+    - '    <key>^Resources/</key>'
+    - '    <true/>'
+    - '    <key>^Resources/.*/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>optional</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1000</real>'
+    - '    </dict>'
+    - '    <key>^Resources/.*/.lproj/locversion.plist$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1100</real>'
+    - '    </dict>'
+    - '    <key>^Resources/Base/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>1010</real>'
+    - '    </dict>'
+    - '    <key>^version.plist$</key>'
+    - '    <true/>'
+    - '  </dict>'
+    - '  <key>rules2</key>'
+    - '  <dict>'
+    - '    <key>.*/.dSYM($|/)</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>11</real>'
+    - '    </dict>'
+    - '    <key>^(.*/)?/.DS_Store$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>2000</real>'
+    - '    </dict>'
+    - '    <key>^(Frameworks|SharedFrameworks|PlugIns|Plug-ins|XPCServices|Helpers|MacOS|Library/(Automator|Spotlight|LoginItems))/</key>'
+    - '    <dict>'
+    - '      <key>nested</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>10</real>'
+    - '    </dict>'
+    - '    <key>^.*</key>'
+    - '    <true/>'
+    - '    <key>^Info/.plist$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^PkgInfo$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^Resources/</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^Resources/.*/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>optional</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1000</real>'
+    - '    </dict>'
+    - '    <key>^Resources/.*/.lproj/locversion.plist$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1100</real>'
+    - '    </dict>'
+    - '    <key>^Resources/Base/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>1010</real>'
+    - '    </dict>'
+    - '    <key>^[^/]+$</key>'
+    - '    <dict>'
+    - '      <key>nested</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>10</real>'
+    - '    </dict>'
+    - '    <key>^embedded/.provisionprofile$</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^version/.plist$</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '  </dict>'
+    - </dict>
+    - </plist>
+    - ''
+- path: Contents/lib/foo/child.app/Contents/Info.plist
+  file_size: 576
+  file_sha256: 4c5130ae58d7184aa747b2d90ff1e21d7542bd6bd5dd94239be2e9873ffda59e
+  entity: other
+- path: Contents/lib/foo/child.app/Contents/MacOS/child
+  file_size: 16386
+  file_sha256: 4cfaf70bc9fb6827fcf7751deaf65f8b54d46fecb6f39cb2ba8fbcf36912430c
+  entity:
+    mach_o:
+      macho_linkedit_start_offset: null
+      macho_signature_start_offset: null
+      macho_signature_end_offset: null
+      macho_linkedit_end_offset: null
+      macho_end_offset: 16386 / 0x4002
+      linkedit_signature_start_offset: null
+      linkedit_signature_end_offset: null
+      linkedit_bytes_after_signature: null
+      signature: null
+- path: Contents/lib/foo/child.app/Contents/MacOS/extra-exe
+  file_size: 16386
+  file_sha256: 4cfaf70bc9fb6827fcf7751deaf65f8b54d46fecb6f39cb2ba8fbcf36912430c
+  entity:
+    mach_o:
+      macho_linkedit_start_offset: null
+      macho_signature_start_offset: null
+      macho_signature_end_offset: null
+      macho_linkedit_end_offset: null
+      macho_end_offset: 16386 / 0x4002
+      linkedit_signature_start_offset: null
+      linkedit_signature_end_offset: null
+      linkedit_bytes_after_signature: null
+      signature: null
+- path: Contents/lib/foo/exe
+  file_size: 16386
+  file_sha256: 4cfaf70bc9fb6827fcf7751deaf65f8b54d46fecb6f39cb2ba8fbcf36912430c
+  entity:
+    mach_o:
+      macho_linkedit_start_offset: null
+      macho_signature_start_offset: null
+      macho_signature_end_offset: null
+      macho_linkedit_end_offset: null
+      macho_end_offset: 16386 / 0x4002
+      linkedit_signature_start_offset: null
+      linkedit_signature_end_offset: null
+      linkedit_bytes_after_signature: null
+      signature: null
+
+$ rcodesign sign MyApp.app
+signing MyApp.app in place
+signing bundle at MyApp.app
+signing 1 nested bundles in the following order:
+Contents/lib/foo/child.app
+entering nested bundle Contents/lib/foo/child.app
+signing bundle at MyApp.app/Contents/lib/foo/child.app into MyApp.app/Contents/lib/foo/child.app
+signing Mach-O file Contents/MacOS/extra-exe
+signing main executable Contents/MacOS/child
+leaving nested bundle Contents/lib/foo/child.app
+signing bundle at MyApp.app into MyApp.app
+signing Mach-O file Contents/lib/foo/exe
+signing main executable Contents/MacOS/MyApp
+
+$ rcodesign debug-file-tree MyApp.app
+d                      MyApp.app/
+d                      MyApp.app/Contents
+f 0a5902dc8e47f490d038 MyApp.app/Contents/Info.plist
+d                      MyApp.app/Contents/MacOS
+f e07ea4755d1135f15295 MyApp.app/Contents/MacOS/MyApp
+d                      MyApp.app/Contents/_CodeSignature
+f 48a72e1777660495d9fc MyApp.app/Contents/_CodeSignature/CodeResources
+d                      MyApp.app/Contents/lib
+d                      MyApp.app/Contents/lib/foo
+d                      MyApp.app/Contents/lib/foo/child.app
+d                      MyApp.app/Contents/lib/foo/child.app/Contents
+f 4c5130ae58d7184aa747 MyApp.app/Contents/lib/foo/child.app/Contents/Info.plist
+d                      MyApp.app/Contents/lib/foo/child.app/Contents/MacOS
+f 8d2bb481b183bd66403b MyApp.app/Contents/lib/foo/child.app/Contents/MacOS/child
+f d4637e70eed799f72544 MyApp.app/Contents/lib/foo/child.app/Contents/MacOS/extra-exe
+d                      MyApp.app/Contents/lib/foo/child.app/Contents/_CodeSignature
+f 164aae2ea1c61b76cd81 MyApp.app/Contents/lib/foo/child.app/Contents/_CodeSignature/CodeResources
+f 2adcd25a21eb14fc3f7b MyApp.app/Contents/lib/foo/exe
+
+$ rcodesign print-signature-info MyApp.app
+- path: Contents/Info.plist
+  file_size: 576
+  file_sha256: 0a5902dc8e47f490d03889d3593d17bddbf79e6c1f79494e20dd28f9459effa5
+  entity: other
+- path: Contents/MacOS/MyApp
+  file_size: 22544
+  file_sha256: e07ea4755d1135f15295324ef4e2d21506ef74a7a95542f56cd659f46c3f886a
+  entity:
+    mach_o:
+      macho_linkedit_start_offset: 16384 / 0x4000
+      macho_signature_start_offset: 16400 / 0x4010
+      macho_signature_end_offset: 16821 / 0x41b5
+      macho_linkedit_end_offset: 22544 / 0x5810
+      macho_end_offset: 22544 / 0x5810
+      linkedit_signature_start_offset: 16 / 0x10
+      linkedit_signature_end_offset: 437 / 0x1b5
+      linkedit_bytes_after_signature: 5723 / 0x165b
+      signature:
+        superblob_length: 421 / 0x1a5
+        blob_count: 3
+        blobs:
+        - slot: CodeDirectory (0)
+          magic: fade0c02
+          length: 365
+          sha1: 90ae5487cb1d55a65877d973aae4f73ddc8c6c85
+          sha256: 2345e491269e624fcc0c1f3aa515702988c5739b69eef97df48cfa7b260fc27b
+        - slot: RequirementSet (2)
+          magic: fade0c01
+          length: 12
+          sha1: 3a75f6db058529148e14dd7ea1b4729cc09ec973
+          sha256: 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986
+        - slot: CMS Signature (65536)
+          magic: fade0b01
+          length: 8
+          sha1: 2a7254313aa41796079bb0e9d0f044345f69f98b
+          sha256: e6c83bc98a10348492c7d4d2378a54572ef29e1a5692ccd02b5e29f4b762d6a0
+        code_directory:
+          version: '0x20400'
+          flags: CodeSignatureFlags(ADHOC)
+          identifier: com.example.mybundle
+          digest_type: sha256
+          platform: 0
+          signed_entity_size: 16400
+          executable_segment_flags: ExecutableSegmentFlags(MAIN_BINARY)
+          code_digests_count: 5
+          slot_digests:
+          - 'Info (1): 0a5902dc8e47f490d03889d3593d17bddbf79e6c1f79494e20dd28f9459effa5'
+          - 'RequirementSet (2): 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986'
+          - 'Resources (3): 48a72e1777660495d9fce43e650c4f00ffe79977e30e4efeaee227b32eeef620'
+        cms: null
+- path: Contents/_CodeSignature/CodeResources
+  file_size: 3001
+  file_sha256: 48a72e1777660495d9fce43e650c4f00ffe79977e30e4efeaee227b32eeef620
+  entity:
+    bundle_code_signature_file: !ResourcesXml
+    - <?xml version="1.0" encoding="UTF-8"?>
+    - <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+    - <plist version="1.0">
+    - <dict>
+    - '  <key>files</key>'
+    - '  <dict/>'
+    - '  <key>files2</key>'
+    - '  <dict>'
+    - '    <key>lib/foo/child.app/Contents/Info.plist</key>'
+    - '    <dict>'
+    - '      <key>hash2</key>'
+    - '      <data>'
+    - '      TFEwrljXGEqnR7LZD/HiHXVCvWvV3ZQjm+Lphz/9pZ4='
+    - '      </data>'
+    - '    </dict>'
+    - '    <key>lib/foo/child.app/Contents/MacOS/child</key>'
+    - '    <dict>'
+    - '      <key>hash2</key>'
+    - '      <data>'
+    - '      jSu0gbGDvWZAO21MEqe6C7r9WFbXmTMk+kW/f203LT8='
+    - '      </data>'
+    - '    </dict>'
+    - '    <key>lib/foo/child.app/Contents/MacOS/extra-exe</key>'
+    - '    <dict>'
+    - '      <key>hash2</key>'
+    - '      <data>'
+    - '      1GN+cO7XmfclRNEqlCdbwEu89NOQkcykJmFIUAsxj6g='
+    - '      </data>'
+    - '    </dict>'
+    - '    <key>lib/foo/child.app/Contents/_CodeSignature/CodeResources</key>'
+    - '    <dict>'
+    - '      <key>hash2</key>'
+    - '      <data>'
+    - '      FkquLqHGG3bNgSCs6qerY1wKAVFGguBJvd44TXiPtnc='
+    - '      </data>'
+    - '    </dict>'
+    - '    <key>lib/foo/exe</key>'
+    - '    <dict>'
+    - '      <key>hash2</key>'
+    - '      <data>'
+    - '      KtzSWiHrFPw/e1yk9UZbUV8hk53ZhD3lv32eP3rPqds='
+    - '      </data>'
+    - '    </dict>'
+    - '  </dict>'
+    - '  <key>rules</key>'
+    - '  <dict>'
+    - '    <key>^Resources/</key>'
+    - '    <true/>'
+    - '    <key>^Resources/.*/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>optional</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1000</real>'
+    - '    </dict>'
+    - '    <key>^Resources/.*/.lproj/locversion.plist$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1100</real>'
+    - '    </dict>'
+    - '    <key>^Resources/Base/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>1010</real>'
+    - '    </dict>'
+    - '    <key>^version.plist$</key>'
+    - '    <true/>'
+    - '  </dict>'
+    - '  <key>rules2</key>'
+    - '  <dict>'
+    - '    <key>.*/.dSYM($|/)</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>11</real>'
+    - '    </dict>'
+    - '    <key>^(.*/)?/.DS_Store$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>2000</real>'
+    - '    </dict>'
+    - '    <key>^(Frameworks|SharedFrameworks|PlugIns|Plug-ins|XPCServices|Helpers|MacOS|Library/(Automator|Spotlight|LoginItems))/</key>'
+    - '    <dict>'
+    - '      <key>nested</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>10</real>'
+    - '    </dict>'
+    - '    <key>^.*</key>'
+    - '    <true/>'
+    - '    <key>^Info/.plist$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^PkgInfo$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^Resources/</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^Resources/.*/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>optional</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1000</real>'
+    - '    </dict>'
+    - '    <key>^Resources/.*/.lproj/locversion.plist$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1100</real>'
+    - '    </dict>'
+    - '    <key>^Resources/Base/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>1010</real>'
+    - '    </dict>'
+    - '    <key>^[^/]+$</key>'
+    - '    <dict>'
+    - '      <key>nested</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>10</real>'
+    - '    </dict>'
+    - '    <key>^embedded/.provisionprofile$</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^version/.plist$</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '  </dict>'
+    - </dict>
+    - </plist>
+    - ''
+- path: Contents/lib/foo/child.app/Contents/Info.plist
+  file_size: 576
+  file_sha256: 4c5130ae58d7184aa747b2d90ff1e21d7542bd6bd5dd94239be2e9873ffda59e
+  entity: other
+- path: Contents/lib/foo/child.app/Contents/MacOS/child
+  file_size: 22544
+  file_sha256: 8d2bb481b183bd66403b6d4c12a7ba0bbafd5856d7993324fa45bf7f6d372d3f
+  entity:
+    mach_o:
+      macho_linkedit_start_offset: 16384 / 0x4000
+      macho_signature_start_offset: 16400 / 0x4010
+      macho_signature_end_offset: 16821 / 0x41b5
+      macho_linkedit_end_offset: 22544 / 0x5810
+      macho_end_offset: 22544 / 0x5810
+      linkedit_signature_start_offset: 16 / 0x10
+      linkedit_signature_end_offset: 437 / 0x1b5
+      linkedit_bytes_after_signature: 5723 / 0x165b
+      signature:
+        superblob_length: 421 / 0x1a5
+        blob_count: 3
+        blobs:
+        - slot: CodeDirectory (0)
+          magic: fade0c02
+          length: 365
+          sha1: da2d1d20b15073dc7c0ea2b9bdf0265b1c60b9d7
+          sha256: 5df5b910c1b35258c22d107a13dccdfad7f747d4c1d6726d72b54c264de1bd40
+        - slot: RequirementSet (2)
+          magic: fade0c01
+          length: 12
+          sha1: 3a75f6db058529148e14dd7ea1b4729cc09ec973
+          sha256: 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986
+        - slot: CMS Signature (65536)
+          magic: fade0b01
+          length: 8
+          sha1: 2a7254313aa41796079bb0e9d0f044345f69f98b
+          sha256: e6c83bc98a10348492c7d4d2378a54572ef29e1a5692ccd02b5e29f4b762d6a0
+        code_directory:
+          version: '0x20400'
+          flags: CodeSignatureFlags(ADHOC)
+          identifier: com.example.mybundle
+          digest_type: sha256
+          platform: 0
+          signed_entity_size: 16400
+          executable_segment_flags: ExecutableSegmentFlags(MAIN_BINARY)
+          code_digests_count: 5
+          slot_digests:
+          - 'Info (1): 4c5130ae58d7184aa747b2d90ff1e21d7542bd6bd5dd94239be2e9873ffda59e'
+          - 'RequirementSet (2): 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986'
+          - 'Resources (3): 164aae2ea1c61b76cd8120aceaa7ab635c0a01514682e049bdde384d788fb677'
+        cms: null
+- path: Contents/lib/foo/child.app/Contents/MacOS/extra-exe
+  file_size: 22544
+  file_sha256: d4637e70eed799f72544d12a94275bc04bbcf4d39091cca4266148500b318fa8
+  entity:
+    mach_o:
+      macho_linkedit_start_offset: 16384 / 0x4000
+      macho_signature_start_offset: 16400 / 0x4010
+      macho_signature_end_offset: 16778 / 0x418a
+      macho_linkedit_end_offset: 22544 / 0x5810
+      macho_end_offset: 22544 / 0x5810
+      linkedit_signature_start_offset: 16 / 0x10
+      linkedit_signature_end_offset: 394 / 0x18a
+      linkedit_bytes_after_signature: 5766 / 0x1686
+      signature:
+        superblob_length: 378 / 0x17a
+        blob_count: 3
+        blobs:
+        - slot: CodeDirectory (0)
+          magic: fade0c02
+          length: 322
+          sha1: 99068332ebb6b9cc3d9c9534835a7f6c12c434ee
+          sha256: feb5492886d3537f86aead02ebd705a5a4eec2e656c28357a20fd814a34d8c06
+        - slot: RequirementSet (2)
+          magic: fade0c01
+          length: 12
+          sha1: 3a75f6db058529148e14dd7ea1b4729cc09ec973
+          sha256: 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986
+        - slot: CMS Signature (65536)
+          magic: fade0b01
+          length: 8
+          sha1: 2a7254313aa41796079bb0e9d0f044345f69f98b
+          sha256: e6c83bc98a10348492c7d4d2378a54572ef29e1a5692ccd02b5e29f4b762d6a0
+        code_directory:
+          version: '0x20400'
+          flags: CodeSignatureFlags(ADHOC)
+          identifier: extra-exe
+          digest_type: sha256
+          platform: 0
+          signed_entity_size: 16400
+          executable_segment_flags: ExecutableSegmentFlags(MAIN_BINARY)
+          code_digests_count: 5
+          slot_digests:
+          - 'Info (1): 0000000000000000000000000000000000000000000000000000000000000000'
+          - 'RequirementSet (2): 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986'
+        cms: null
+- path: Contents/lib/foo/child.app/Contents/_CodeSignature/CodeResources
+  file_size: 2427
+  file_sha256: 164aae2ea1c61b76cd8120aceaa7ab635c0a01514682e049bdde384d788fb677
+  entity:
+    bundle_code_signature_file: !ResourcesXml
+    - <?xml version="1.0" encoding="UTF-8"?>
+    - <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+    - <plist version="1.0">
+    - <dict>
+    - '  <key>files</key>'
+    - '  <dict/>'
+    - '  <key>files2</key>'
+    - '  <dict>'
+    - '    <key>MacOS/extra-exe</key>'
+    - '    <dict>'
+    - '      <key>cdhash</key>'
+    - '      <data>'
+    - '      /rVJKIbTU3+Grq0C69cFpaTuwuY='
+    - '      </data>'
+    - '      <key>requirement</key>'
+    - '      <string>cdhash H"feb5492886d3537f86aead02ebd705a5a4eec2e6"</string>'
+    - '    </dict>'
+    - '  </dict>'
+    - '  <key>rules</key>'
+    - '  <dict>'
+    - '    <key>^Resources/</key>'
+    - '    <true/>'
+    - '    <key>^Resources/.*/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>optional</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1000</real>'
+    - '    </dict>'
+    - '    <key>^Resources/.*/.lproj/locversion.plist$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1100</real>'
+    - '    </dict>'
+    - '    <key>^Resources/Base/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>1010</real>'
+    - '    </dict>'
+    - '    <key>^version.plist$</key>'
+    - '    <true/>'
+    - '  </dict>'
+    - '  <key>rules2</key>'
+    - '  <dict>'
+    - '    <key>.*/.dSYM($|/)</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>11</real>'
+    - '    </dict>'
+    - '    <key>^(.*/)?/.DS_Store$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>2000</real>'
+    - '    </dict>'
+    - '    <key>^(Frameworks|SharedFrameworks|PlugIns|Plug-ins|XPCServices|Helpers|MacOS|Library/(Automator|Spotlight|LoginItems))/</key>'
+    - '    <dict>'
+    - '      <key>nested</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>10</real>'
+    - '    </dict>'
+    - '    <key>^.*</key>'
+    - '    <true/>'
+    - '    <key>^Info/.plist$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^PkgInfo$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^Resources/</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^Resources/.*/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>optional</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1000</real>'
+    - '    </dict>'
+    - '    <key>^Resources/.*/.lproj/locversion.plist$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1100</real>'
+    - '    </dict>'
+    - '    <key>^Resources/Base/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>1010</real>'
+    - '    </dict>'
+    - '    <key>^[^/]+$</key>'
+    - '    <dict>'
+    - '      <key>nested</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>10</real>'
+    - '    </dict>'
+    - '    <key>^embedded/.provisionprofile$</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^version/.plist$</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '  </dict>'
+    - </dict>
+    - </plist>
+    - ''
+- path: Contents/lib/foo/exe
+  file_size: 22544
+  file_sha256: 2adcd25a21eb14fc3f7b5ca4f5465b515f21939dd9843de5bf7d9e3f7acfa9db
+  entity:
+    mach_o:
+      macho_linkedit_start_offset: 16384 / 0x4000
+      macho_signature_start_offset: 16400 / 0x4010
+      macho_signature_end_offset: 16772 / 0x4184
+      macho_linkedit_end_offset: 22544 / 0x5810
+      macho_end_offset: 22544 / 0x5810
+      linkedit_signature_start_offset: 16 / 0x10
+      linkedit_signature_end_offset: 388 / 0x184
+      linkedit_bytes_after_signature: 5772 / 0x168c
+      signature:
+        superblob_length: 372 / 0x174
+        blob_count: 3
+        blobs:
+        - slot: CodeDirectory (0)
+          magic: fade0c02
+          length: 316
+          sha1: 4ca6f9ee2bfe2bfac44ab4e9e9c1ef9b6e4fc0de
+          sha256: 23fc7207e52f23c0f6d2317dbb92cf9eff2aca8fe61ac241900d48be8f46cf5c
+        - slot: RequirementSet (2)
+          magic: fade0c01
+          length: 12
+          sha1: 3a75f6db058529148e14dd7ea1b4729cc09ec973
+          sha256: 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986
+        - slot: CMS Signature (65536)
+          magic: fade0b01
+          length: 8
+          sha1: 2a7254313aa41796079bb0e9d0f044345f69f98b
+          sha256: e6c83bc98a10348492c7d4d2378a54572ef29e1a5692ccd02b5e29f4b762d6a0
+        code_directory:
+          version: '0x20400'
+          flags: CodeSignatureFlags(ADHOC)
+          identifier: exe
+          digest_type: sha256
+          platform: 0
+          signed_entity_size: 16400
+          executable_segment_flags: ExecutableSegmentFlags(MAIN_BINARY)
+          code_digests_count: 5
+          slot_digests:
+          - 'Info (1): 0000000000000000000000000000000000000000000000000000000000000000'
+          - 'RequirementSet (2): 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986'
+        cms: null
+
+```

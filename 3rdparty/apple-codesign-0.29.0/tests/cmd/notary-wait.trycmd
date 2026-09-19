@@ -1,0 +1,46 @@
+```
+$ rcodesign help notary-wait
+Wait for completion of a previous submission
+
+Usage: rcodesign[EXE] notary-wait [OPTIONS] <SUBMISSION_ID>
+
+Arguments:
+  <SUBMISSION_ID>
+          The ID of the previous submission to wait on
+
+Options:
+  -C, --config-file <CONFIG_PATH>
+          Explicit configuration file to load.
+          
+          If provided, the default configuration files are not loaded, even if they exist.
+          
+          Can be specified multiple times. Files are loaded/merged in the order given.
+          
+          The special value `/dev/null` can be used to specify an empty/null config file. It can be used to short-circuit loading of default config files.
+
+      --max-wait-seconds <MAX_WAIT_SECONDS>
+          Maximum time in seconds to wait for the upload result
+          
+          [default: 600]
+
+      --api-key-file <PATH>
+          Path to a JSON file containing the API Key
+
+  -P, --profile <PROFILE>
+          Configuration profile to load.
+          
+          If not specified, the implicit "default" profile is loaded.
+
+      --api-issuer <API_ISSUER>
+          App Store Connect Issuer ID (likely a UUID)
+
+  -v, --verbose...
+          Increase logging verbosity. Can be specified multiple times
+
+      --api-key <API_KEY>
+          App Store Connect API Key ID
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+```

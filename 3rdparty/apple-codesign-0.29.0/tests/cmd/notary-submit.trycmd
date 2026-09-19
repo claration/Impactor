@@ -1,0 +1,74 @@
+```
+$ rcodesign help notary-submit
+Upload an asset to Apple for notarization and possibly staple it
+
+This command is used to submit an asset to Apple for notarization. Given a path to an asset with a code signature, this command will connect to Apple's Notary API and upload the asset. It will then optionally wait on the submission to finish processing (which typically takes a few dozen seconds). If the asset validates Apple's requirements, Apple will issue a *notarization ticket* as proof that they approved of it. This ticket is then added to the asset in a process called *stapling*, which this command can do automatically if the `--staple` argument is passed.
+
+# App Store Connect API Key
+
+In order to communicate with Apple's servers, you need an App Store Connect API Key. This requires an Apple Developer account. You can generate an API Key at https://appstoreconnect.apple.com/access/api.
+
+The recommended mechanism to define the API Key is via `--api-key-path`, which takes the path to a file containing JSON produced by the `encode-app-store-connect-api-key` command. See that command's help for more details.
+
+If you don't wish to use `--api-key-path`, you can define the key components via the `--api-issuer` and `--api-key` arguments. You will need a file named `AuthKey_<ID>.p8` in one of the following locations: `$(pwd)/private_keys/`, `~/private_keys/`, '~/.private_keys/`, and `~/.appstoreconnect/private_keys/` (searched in that order). The name of the file is derived from the value of `--api-key`.
+
+In all cases, App Store Connect API Keys can be managed at https://appstoreconnect.apple.com/access/api.
+
+# Modes of Operation
+
+By default, the `notarize` command will initiate an upload to Apple and exit once the upload is complete.
+
+Once an upload is performed, Apple will asynchronously process the uploaded content. This can take seconds to minutes.
+
+To poll Apple's servers and wait on the server-side processing to finish, specify `--wait`. This will query the state of the processing every few seconds until it is finished, the max wait time is reached, or an error occurs.
+
+To automatically staple an asset after server-side processing has finished, specify `--staple`. This implies `--wait`.
+
+Usage: rcodesign[EXE] notary-submit [OPTIONS] <PATH>
+
+Arguments:
+  <PATH>
+          Path to asset to upload
+
+Options:
+  -C, --config-file <CONFIG_PATH>
+          Explicit configuration file to load.
+          
+          If provided, the default configuration files are not loaded, even if they exist.
+          
+          Can be specified multiple times. Files are loaded/merged in the order given.
+          
+          The special value `/dev/null` can be used to specify an empty/null config file. It can be used to short-circuit loading of default config files.
+
+      --wait
+          Whether to wait for upload processing to complete
+
+      --max-wait-seconds <MAX_WAIT_SECONDS>
+          Maximum time in seconds to wait for the upload result
+          
+          [default: 600]
+
+  -P, --profile <PROFILE>
+          Configuration profile to load.
+          
+          If not specified, the implicit "default" profile is loaded.
+
+      --staple
+          Staple the notarization ticket after successful upload (implies --wait)
+
+  -v, --verbose...
+          Increase logging verbosity. Can be specified multiple times
+
+      --api-key-file <PATH>
+          Path to a JSON file containing the API Key
+
+      --api-issuer <API_ISSUER>
+          App Store Connect Issuer ID (likely a UUID)
+
+      --api-key <API_KEY>
+          App Store Connect API Key ID
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+```

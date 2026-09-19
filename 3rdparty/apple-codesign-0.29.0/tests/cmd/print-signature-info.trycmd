@@ -1,0 +1,32 @@
+```
+$ rcodesign help print-signature-info
+Print signature information for a filesystem path
+
+Usage: rcodesign[EXE] print-signature-info [OPTIONS] <PATH>
+
+Arguments:
+  <PATH>
+          Filesystem path to entity whose info to print
+
+Options:
+  -C, --config-file <CONFIG_PATH>
+          Explicit configuration file to load.
+          
+          If provided, the default configuration files are not loaded, even if they exist.
+          
+          Can be specified multiple times. Files are loaded/merged in the order given.
+          
+          The special value `/dev/null` can be used to specify an empty/null config file. It can be used to short-circuit loading of default config files.
+
+  -P, --profile <PROFILE>
+          Configuration profile to load.
+          
+          If not specified, the implicit "default" profile is loaded.
+
+  -v, --verbose...
+          Increase logging verbosity. Can be specified multiple times
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+```

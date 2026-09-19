@@ -1,0 +1,236 @@
+```
+$ rcodesign debug-create-info-plist --bundle-name Shallow.framework --package-type FMWK Shallow.framework/Resources/Info.plist
+writing Shallow.framework/Resources/Info.plist
+
+$ rcodesign debug-create-macho --file-type dylib Shallow.framework/Shallow
+assuming default minimum version 11.0.0
+writing Mach-O to Shallow.framework/Shallow
+
+$ touch Shallow.framework/Resources/root-00.txt
+
+$ rcodesign sign Shallow.framework Shallow.framework.signed
+signing Shallow.framework to Shallow.framework.signed
+signing bundle at Shallow.framework
+signing bundle at Shallow.framework into Shallow.framework.signed
+signing Mach-O file Shallow
+bundle has no main executable to sign specially
+
+$ rcodesign debug-file-tree Shallow.framework.signed
+d                      Shallow.framework.signed/
+d                      Shallow.framework.signed/Resources
+f 4ccd32815c007b1014a9 Shallow.framework.signed/Resources/Info.plist
+f e3b0c44298fc1c149afb Shallow.framework.signed/Resources/root-00.txt
+f 6b0a00ccc659f8758965 Shallow.framework.signed/Shallow
+d                      Shallow.framework.signed/_CodeSignature
+f 7c9c39f0c67dd8f067b9 Shallow.framework.signed/_CodeSignature/CodeResources
+
+$ rcodesign print-signature-info Shallow.framework.signed
+- path: Resources/Info.plist
+  file_size: 612
+  file_sha256: 4ccd32815c007b1014a9e9a626cd9ebc5ada1f96b7535f2e2bdc6fb74534eefa
+  entity: other
+- path: Resources/root-00.txt
+  file_size: 0
+  file_sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+  entity: other
+- path: Shallow
+  file_size: 22544
+  file_sha256: 6b0a00ccc659f875896592dd0974113fcff7d5bf588ac9cc43a8598083fc6639
+  entity:
+    mach_o:
+      macho_linkedit_start_offset: 16384 / 0x4000
+      macho_signature_start_offset: 16400 / 0x4010
+      macho_signature_end_offset: 16776 / 0x4188
+      macho_linkedit_end_offset: 22544 / 0x5810
+      macho_end_offset: 22544 / 0x5810
+      linkedit_signature_start_offset: 16 / 0x10
+      linkedit_signature_end_offset: 392 / 0x188
+      linkedit_bytes_after_signature: 5768 / 0x1688
+      signature:
+        superblob_length: 376 / 0x178
+        blob_count: 3
+        blobs:
+        - slot: CodeDirectory (0)
+          magic: fade0c02
+          length: 320
+          sha1: 65759643d79669d331bc4e5db3269e8d4767abd5
+          sha256: 93fce90cf45628debc178cc1ef869e5f24b035c649ed7fdd1adaa7d9f6f11f5f
+        - slot: RequirementSet (2)
+          magic: fade0c01
+          length: 12
+          sha1: 3a75f6db058529148e14dd7ea1b4729cc09ec973
+          sha256: 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986
+        - slot: CMS Signature (65536)
+          magic: fade0b01
+          length: 8
+          sha1: 2a7254313aa41796079bb0e9d0f044345f69f98b
+          sha256: e6c83bc98a10348492c7d4d2378a54572ef29e1a5692ccd02b5e29f4b762d6a0
+        code_directory:
+          version: '0x20400'
+          flags: CodeSignatureFlags(ADHOC)
+          identifier: Shallow
+          digest_type: sha256
+          platform: 0
+          signed_entity_size: 16400
+          executable_segment_flags: ExecutableSegmentFlags(0x0)
+          code_digests_count: 5
+          slot_digests:
+          - 'Info (1): 0000000000000000000000000000000000000000000000000000000000000000'
+          - 'RequirementSet (2): 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986'
+        cms: null
+- path: _CodeSignature/CodeResources
+  file_size: 2881
+  file_sha256: 7c9c39f0c67dd8f067b908c37b1c05fe22010f377ab8f441753586c4e269df8f
+  entity:
+    bundle_code_signature_file: !ResourcesXml
+    - <?xml version="1.0" encoding="UTF-8"?>
+    - <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+    - <plist version="1.0">
+    - <dict>
+    - '  <key>files</key>'
+    - '  <dict>'
+    - '    <key>Resources/Info.plist</key>'
+    - '    <data>'
+    - '    LviF5BS72euY+yGkNlp3uTcDLCY='
+    - '    </data>'
+    - '    <key>Resources/root-00.txt</key>'
+    - '    <data>'
+    - '    2jmj7l5rSw0yVb/vlWAYkK/YBwk='
+    - '    </data>'
+    - '  </dict>'
+    - '  <key>files2</key>'
+    - '  <dict>'
+    - '    <key>Resources/Info.plist</key>'
+    - '    <dict>'
+    - '      <key>hash2</key>'
+    - '      <data>'
+    - '      TM0ygVwAexAUqemmJs2evFraH5a3U18uK9xvt0U07vo='
+    - '      </data>'
+    - '    </dict>'
+    - '    <key>Resources/root-00.txt</key>'
+    - '    <dict>'
+    - '      <key>hash2</key>'
+    - '      <data>'
+    - '      47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU='
+    - '      </data>'
+    - '    </dict>'
+    - '    <key>Shallow</key>'
+    - '    <dict>'
+    - '      <key>cdhash</key>'
+    - '      <data>'
+    - '      k/zpDPRWKN68F4zB74aeXySwNcY='
+    - '      </data>'
+    - '      <key>requirement</key>'
+    - '      <string>cdhash H"93fce90cf45628debc178cc1ef869e5f24b035c6"</string>'
+    - '    </dict>'
+    - '  </dict>'
+    - '  <key>rules</key>'
+    - '  <dict>'
+    - '    <key>^Resources/</key>'
+    - '    <true/>'
+    - '    <key>^Resources/.*/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>optional</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1000</real>'
+    - '    </dict>'
+    - '    <key>^Resources/.*/.lproj/locversion.plist$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1100</real>'
+    - '    </dict>'
+    - '    <key>^Resources/Base/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>1010</real>'
+    - '    </dict>'
+    - '    <key>^version.plist$</key>'
+    - '    <true/>'
+    - '  </dict>'
+    - '  <key>rules2</key>'
+    - '  <dict>'
+    - '    <key>.*/.dSYM($|/)</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>11</real>'
+    - '    </dict>'
+    - '    <key>^(.*/)?/.DS_Store$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>2000</real>'
+    - '    </dict>'
+    - '    <key>^(Frameworks|SharedFrameworks|PlugIns|Plug-ins|XPCServices|Helpers|MacOS|Library/(Automator|Spotlight|LoginItems))/</key>'
+    - '    <dict>'
+    - '      <key>nested</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>10</real>'
+    - '    </dict>'
+    - '    <key>^.*</key>'
+    - '    <true/>'
+    - '    <key>^Info/.plist$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^PkgInfo$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^Resources/</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^Resources/.*/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>optional</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1000</real>'
+    - '    </dict>'
+    - '    <key>^Resources/.*/.lproj/locversion.plist$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1100</real>'
+    - '    </dict>'
+    - '    <key>^Resources/Base/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>1010</real>'
+    - '    </dict>'
+    - '    <key>^[^/]+$</key>'
+    - '    <dict>'
+    - '      <key>nested</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>10</real>'
+    - '    </dict>'
+    - '    <key>^embedded/.provisionprofile$</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^version/.plist$</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '  </dict>'
+    - </dict>
+    - </plist>
+    - ''
+
+```

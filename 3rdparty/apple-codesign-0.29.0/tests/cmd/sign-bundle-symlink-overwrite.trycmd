@@ -1,0 +1,43 @@
+Sign a bundle with symlinks and verify symlink overwrites work
+
+```
+$ rcodesign debug-create-macho MyApp.app/Contents/MacOS/MyApp
+assuming default minimum version 11.0.0
+writing Mach-O to MyApp.app/Contents/MacOS/MyApp
+
+$ rcodesign debug-create-info-plist --bundle-name MyApp MyApp.app/Contents/Info.plist
+writing MyApp.app/Contents/Info.plist
+
+$ mkdir -p MyApp.app/Contents/Resources
+$ touch MyApp.app/Contents/Resources/file-00.txt
+$ touch MyApp.app/Contents/Resources/file-01.txt
+$ ln -s file-00.txt MyApp.app/Contents/Resources/file.txt
+
+$ rcodesign sign MyApp.app MyApp.app.signed
+signing MyApp.app to MyApp.app.signed
+signing bundle at MyApp.app
+signing bundle at MyApp.app into MyApp.app.signed
+signing main executable Contents/MacOS/MyApp
+
+$ ln -sf file-01.txt MyApp.app/Contents/Resources/file.txt
+
+$ rcodesign sign MyApp.app MyApp.app.signed
+signing MyApp.app to MyApp.app.signed
+signing bundle at MyApp.app
+signing bundle at MyApp.app into MyApp.app.signed
+signing main executable Contents/MacOS/MyApp
+
+$ rcodesign debug-file-tree MyApp.app.signed
+d                      MyApp.app.signed/
+d                      MyApp.app.signed/Contents
+f 0a5902dc8e47f490d038 MyApp.app.signed/Contents/Info.plist
+d                      MyApp.app.signed/Contents/MacOS
+f 92cc3ed9973cf49d2574 MyApp.app.signed/Contents/MacOS/MyApp
+d                      MyApp.app.signed/Contents/Resources
+f e3b0c44298fc1c149afb MyApp.app.signed/Contents/Resources/file-00.txt
+f e3b0c44298fc1c149afb MyApp.app.signed/Contents/Resources/file-01.txt
+l                      MyApp.app.signed/Contents/Resources/file.txt -> file-01.txt
+d                      MyApp.app.signed/Contents/_CodeSignature
+f bafb4e22a57de8763dc1 MyApp.app.signed/Contents/_CodeSignature/CodeResources
+
+```

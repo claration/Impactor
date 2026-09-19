@@ -1,0 +1,348 @@
+```
+$ rcodesign analyze-certificate --help
+Analyze an X.509 certificate for Apple code signing properties.
+
+Given the path to a PEM encoded X.509 certificate, this command will read the certificate and print information about it relevant to Apple code signing.
+
+The output of the command can be useful to learn about X.509 certificate extensions used by code signing certificates and to debug low-level properties related to certificates.
+
+Usage: rcodesign[EXE] analyze-certificate [OPTIONS]
+
+Options:
+  -C, --config-file <CONFIG_PATH>
+          Explicit configuration file to load.
+          
+          If provided, the default configuration files are not loaded, even if they exist.
+          
+          Can be specified multiple times. Files are loaded/merged in the order given.
+          
+          The special value `/dev/null` can be used to specify an empty/null config file. It can be used to short-circuit loading of default config files.
+
+      --smartcard-slot <SLOT>
+          Smartcard slot number of signing certificate to use (9c is common)
+
+  -P, --profile <PROFILE>
+          Configuration profile to load.
+          
+          If not specified, the implicit "default" profile is loaded.
+
+      --smartcard-pin <SECRET>
+          Smartcard PIN used to unlock certificate
+          
+          If not provided, you will be prompted for a PIN as necessary.
+
+      --smartcard-pin-env <STRING>
+          Environment variable holding the smartcard PIN
+
+  -v, --verbose...
+          Increase logging verbosity. Can be specified multiple times
+
+      --keychain-domain <DOMAIN>
+          (macOS only) Keychain domain to operate on
+          
+          [possible values: user, system, common, dynamic]
+
+      --keychain-fingerprint <SHA256 FINGERPRINT>
+          (macOS only) SHA-256 fingerprint of certificate in Keychain to use
+
+      --windows-store-name <STORE>
+          (Windows only) Windows Store to operate on
+          
+          [possible values: user, machine, service]
+
+      --windows-store-sha1-fingerprint <SHA1 FINGERPRINT>
+          (Windows only) SHA-1 fingerprint of certificate in Windows Store to use
+
+      --pem-file <PATH>
+          Path to file containing PEM encoded certificate/key data
+
+      --p12-file <PATH>
+          Path to a .p12/PFX file containing a certificate key pair
+
+      --p12-password <SECRET>
+          The password to use to open the --p12-file file
+
+      --p12-password-file <PATH>
+          Path to file containing password for opening --p12-file file
+
+      --remote-signing-url <URL>
+          URL of a remote code signing server
+
+      --remote-public-key <BASE64 ENCODED PUBLIC KEY>
+          Base64 encoded public key data describing the signer
+
+      --remote-public-key-pem-file <PATH>
+          PEM encoded public key data describing the signer
+
+      --remote-shared-secret <SECRET>
+          Shared secret used for remote signing
+
+      --remote-shared-secret-env <ENV VAR NAME>
+          Environment variable holding the shared secret used for remote signing
+
+      --certificate-der-file <PATH>
+          Path to file containing DER encoded certificate data
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+```
+
+```
+$ rcodesign analyze-certificate --keychain-domain user --keychain-fingerprint fingerprint
+? 2
+error: the argument '--keychain-domain <DOMAIN>' cannot be used with '--keychain-fingerprint <SHA256 FINGERPRINT>'
+
+Usage: rcodesign[EXE] analyze-certificate --keychain-domain <DOMAIN>
+
+For more information, try '--help'.
+
+```
+
+```
+$ rcodesign analyze-certificate --p12-password foo --p12-password-file path
+? 2
+error: the argument '--p12-password <SECRET>' cannot be used with '--p12-password-file <PATH>'
+
+Usage: rcodesign[EXE] analyze-certificate --p12-password <SECRET>
+
+For more information, try '--help'.
+
+```
+
+```
+$ rcodesign analyze-certificate --remote-public-key foo --remote-public-key-pem-file path
+? 2
+error: the argument '--remote-public-key <BASE64 ENCODED PUBLIC KEY>' cannot be used with '--remote-public-key-pem-file <PATH>'
+
+Usage: rcodesign[EXE] analyze-certificate --remote-public-key <BASE64 ENCODED PUBLIC KEY>
+
+For more information, try '--help'.
+
+```
+
+```
+$ rcodesign analyze-certificate --remote-shared-secret secret --remote-shared-secret-env env
+? 2
+error: the argument '--remote-shared-secret <SECRET>' cannot be used with '--remote-shared-secret-env <ENV VAR NAME>'
+
+Usage: rcodesign[EXE] analyze-certificate --remote-shared-secret <SECRET>
+
+For more information, try '--help'.
+
+```
+
+```
+$ rcodesign analyze-certificate --der-source src/testdata/apple-signed-developer-id-application.cer
+reading DER file src/testdata/apple-signed-developer-id-application.cer
+# Certificate 0
+
+Subject CN:                  Developer ID Application: Gregory Szorc (MK22MZP987)
+Issuer CN:                   Developer ID Certification Authority
+Subject is Issuer?:          false
+Team ID:                     MK22MZP987
+SHA-1 fingerprint:           d6b1f9320ce2cc552ad34f05b7fd29a62a047e87
+SHA-256 fingerprint:         7bf474b50849b231c4524731de63fa035c434ce68589db7b3c22e3d04f1dab7e
+Not Valid Before:            2021-04-22T01:08:32+00:00
+Not Valid After:             2026-04-23T01:08:31+00:00
+Key Algorithm:               RSA
+Signature Algorithm:         SHA-256 with RSA encryption
+Public Key Data:             MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAs52TZuX8/9SVXNBr6Vz5CZOmis3lCpRsSP6pKPnIfK46DlOSoob6u/wALiPKOZJOYKnnbHuJ1pjvFEHif/eJkdfovu82bwAMJnFrbCGBHmOsqfuURfc5cfaIcpred9P0mFUVpu194n74ZR2sjxJIFIMxJXgh7dSE4dKKokf/o5Orlb3d84i1/yY/ePSdnFIMotxrv0lvuZjdlIZE6ugoElueSyH1ZwF03UqQznJ1uuw1DSRyC0YD2l7paO+CKKpHAvsTSAZcj4X6qwx+aVgxiYcfl1z6nVDVv1m6+ChAOGyo06KpGPxFeON/Dp704UJyfyrRF7xDIf/Cu+2ftMlLswIDAQAB
+Signed by Apple?:            true
+Apple Issuing Chain:
+  - Developer ID Certification Authority
+  - Apple Root CA
+  - Apple Root Certificate Authority
+Guessed Certificate Profile: DeveloperIdApplication
+Is Apple Root CA?:           false
+Is Apple Intermediate CA?:   false
+Apple Extended Key Usage Purpose Extensions:
+  - 1.3.6.1.5.5.7.3.3 (CodeSigning)
+Apple Code Signing Extensions:
+  - 1.2.840.113635.100.6.1.33 (DeveloperIdDate)
+  - 1.2.840.113635.100.6.1.13 (DeveloperIdApplication)
+
+-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAs52TZuX8/9SVXNBr6Vz5
+CZOmis3lCpRsSP6pKPnIfK46DlOSoob6u/wALiPKOZJOYKnnbHuJ1pjvFEHif/eJ
+kdfovu82bwAMJnFrbCGBHmOsqfuURfc5cfaIcpred9P0mFUVpu194n74ZR2sjxJI
+FIMxJXgh7dSE4dKKokf/o5Orlb3d84i1/yY/ePSdnFIMotxrv0lvuZjdlIZE6ugo
+ElueSyH1ZwF03UqQznJ1uuw1DSRyC0YD2l7paO+CKKpHAvsTSAZcj4X6qwx+aVgx
+iYcfl1z6nVDVv1m6+ChAOGyo06KpGPxFeON/Dp704UJyfyrRF7xDIf/Cu+2ftMlL
+swIDAQAB
+-----END PUBLIC KEY-----
+
+-----BEGIN CERTIFICATE-----
+MIIFpjCCBI6gAwIBAgIIfTmR3fnRGfowDQYJKoZIhvcNAQELBQAweTEtMCsGA1UE
+AwwkRGV2ZWxvcGVyIElEIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MSYwJAYDVQQL
+DB1BcHBsZSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTETMBEGA1UECgwKQXBwbGUg
+SW5jLjELMAkGA1UEBhMCVVMwHhcNMjEwNDIyMDEwODMyWhcNMjYwNDIzMDEwODMx
+WjCBlTEaMBgGCgmSJomT8ixkAQEMCk1LMjJNWlA5ODcxPTA7BgNVBAMMNERldmVs
+b3BlciBJRCBBcHBsaWNhdGlvbjogR3JlZ29yeSBTem9yYyAoTUsyMk1aUDk4Nykx
+EzARBgNVBAsMCk1LMjJNWlA5ODcxFjAUBgNVBAoMDUdyZWdvcnkgU3pvcmMxCzAJ
+BgNVBAYTAlVTMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAs52TZuX8
+/9SVXNBr6Vz5CZOmis3lCpRsSP6pKPnIfK46DlOSoob6u/wALiPKOZJOYKnnbHuJ
+1pjvFEHif/eJkdfovu82bwAMJnFrbCGBHmOsqfuURfc5cfaIcpred9P0mFUVpu19
+4n74ZR2sjxJIFIMxJXgh7dSE4dKKokf/o5Orlb3d84i1/yY/ePSdnFIMotxrv0lv
+uZjdlIZE6ugoElueSyH1ZwF03UqQznJ1uuw1DSRyC0YD2l7paO+CKKpHAvsTSAZc
+j4X6qwx+aVgxiYcfl1z6nVDVv1m6+ChAOGyo06KpGPxFeON/Dp704UJyfyrRF7xD
+If/Cu+2ftMlLswIDAQABo4ICEzCCAg8wDAYDVR0TAQH/BAIwADAfBgNVHSMEGDAW
+gBRXF+2iz9x8mKEQ4Py+hy0s8uMXVDBABggrBgEFBQcBAQQ0MDIwMAYIKwYBBQUH
+MAGGJGh0dHA6Ly9vY3NwLmFwcGxlLmNvbS9vY3NwMDMtZGV2aWQwNjCCAR0GA1Ud
+IASCARQwggEQMIIBDAYJKoZIhvdjZAUBMIH+MIHDBggrBgEFBQcCAjCBtgyBs1Jl
+bGlhbmNlIG9uIHRoaXMgY2VydGlmaWNhdGUgYnkgYW55IHBhcnR5IGFzc3VtZXMg
+YWNjZXB0YW5jZSBvZiB0aGUgdGhlbiBhcHBsaWNhYmxlIHN0YW5kYXJkIHRlcm1z
+IGFuZCBjb25kaXRpb25zIG9mIHVzZSwgY2VydGlmaWNhdGUgcG9saWN5IGFuZCBj
+ZXJ0aWZpY2F0aW9uIHByYWN0aWNlIHN0YXRlbWVudHMuMDYGCCsGAQUFBwIBFipo
+dHRwOi8vd3d3LmFwcGxlLmNvbS9jZXJ0aWZpY2F0ZWF1dGhvcml0eS8wFgYDVR0l
+AQH/BAwwCgYIKwYBBQUHAwMwHQYDVR0OBBYEFJWxErKAkOUMhUHKIfurpWswr6OM
+MA4GA1UdDwEB/wQEAwIHgDAfBgoqhkiG92NkBgEhBBEMDzIwMjEwNDIyMDAwMDAw
+WjATBgoqhkiG92NkBgENAQH/BAIFADANBgkqhkiG9w0BAQsFAAOCAQEAGpHZefiX
+l5n79MZM8GFVs5oGJOdspORMFa9SxWa59LaBAWpkUbVtgic25CQtaIZddb7vgMpq
+uCqQIFiYz3MfdaPgKMqM1MGNVOw14Z4nM1z9CgLctBS7ie2ScKf9nJnbLCm2qCeS
+5A13mUagb7lwdzI3Z5G6JP3+ea46Kg0bY9c4TCAZr8v/vpBWktnBimuQ9Rz3PPTT
+HPCYuazSBKos0g3gNLgzGdQyZLDvyfyqJ3SvIAvGBYC1SxoGUB8RBeZuYLRQOylA
+72DfBd+bt1wASaSNTosSAauo3Sd3cvIwAtlTtWAT3ISZ36ygnbgwfaarz8Q04MDc
+4Y74EVg2IvFyLA==
+-----END CERTIFICATE-----
+
+
+```
+
+```
+$ rcodesign analyze-certificate --pem-source src/testdata/apple-signed-developer-id-application.pem
+reading PEM data from src/testdata/apple-signed-developer-id-application.pem
+# Certificate 0
+
+Subject CN:                  Developer ID Application: Gregory Szorc (MK22MZP987)
+Issuer CN:                   Developer ID Certification Authority
+Subject is Issuer?:          false
+Team ID:                     MK22MZP987
+SHA-1 fingerprint:           d6b1f9320ce2cc552ad34f05b7fd29a62a047e87
+SHA-256 fingerprint:         7bf474b50849b231c4524731de63fa035c434ce68589db7b3c22e3d04f1dab7e
+Not Valid Before:            2021-04-22T01:08:32+00:00
+Not Valid After:             2026-04-23T01:08:31+00:00
+Key Algorithm:               RSA
+Signature Algorithm:         SHA-256 with RSA encryption
+Public Key Data:             MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAs52TZuX8/9SVXNBr6Vz5CZOmis3lCpRsSP6pKPnIfK46DlOSoob6u/wALiPKOZJOYKnnbHuJ1pjvFEHif/eJkdfovu82bwAMJnFrbCGBHmOsqfuURfc5cfaIcpred9P0mFUVpu194n74ZR2sjxJIFIMxJXgh7dSE4dKKokf/o5Orlb3d84i1/yY/ePSdnFIMotxrv0lvuZjdlIZE6ugoElueSyH1ZwF03UqQznJ1uuw1DSRyC0YD2l7paO+CKKpHAvsTSAZcj4X6qwx+aVgxiYcfl1z6nVDVv1m6+ChAOGyo06KpGPxFeON/Dp704UJyfyrRF7xDIf/Cu+2ftMlLswIDAQAB
+Signed by Apple?:            true
+Apple Issuing Chain:
+  - Developer ID Certification Authority
+  - Apple Root CA
+  - Apple Root Certificate Authority
+Guessed Certificate Profile: DeveloperIdApplication
+Is Apple Root CA?:           false
+Is Apple Intermediate CA?:   false
+Apple Extended Key Usage Purpose Extensions:
+  - 1.3.6.1.5.5.7.3.3 (CodeSigning)
+Apple Code Signing Extensions:
+  - 1.2.840.113635.100.6.1.33 (DeveloperIdDate)
+  - 1.2.840.113635.100.6.1.13 (DeveloperIdApplication)
+
+-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAs52TZuX8/9SVXNBr6Vz5
+CZOmis3lCpRsSP6pKPnIfK46DlOSoob6u/wALiPKOZJOYKnnbHuJ1pjvFEHif/eJ
+kdfovu82bwAMJnFrbCGBHmOsqfuURfc5cfaIcpred9P0mFUVpu194n74ZR2sjxJI
+FIMxJXgh7dSE4dKKokf/o5Orlb3d84i1/yY/ePSdnFIMotxrv0lvuZjdlIZE6ugo
+ElueSyH1ZwF03UqQznJ1uuw1DSRyC0YD2l7paO+CKKpHAvsTSAZcj4X6qwx+aVgx
+iYcfl1z6nVDVv1m6+ChAOGyo06KpGPxFeON/Dp704UJyfyrRF7xDIf/Cu+2ftMlL
+swIDAQAB
+-----END PUBLIC KEY-----
+
+-----BEGIN CERTIFICATE-----
+MIIFpjCCBI6gAwIBAgIIfTmR3fnRGfowDQYJKoZIhvcNAQELBQAweTEtMCsGA1UE
+AwwkRGV2ZWxvcGVyIElEIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MSYwJAYDVQQL
+DB1BcHBsZSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTETMBEGA1UECgwKQXBwbGUg
+SW5jLjELMAkGA1UEBhMCVVMwHhcNMjEwNDIyMDEwODMyWhcNMjYwNDIzMDEwODMx
+WjCBlTEaMBgGCgmSJomT8ixkAQEMCk1LMjJNWlA5ODcxPTA7BgNVBAMMNERldmVs
+b3BlciBJRCBBcHBsaWNhdGlvbjogR3JlZ29yeSBTem9yYyAoTUsyMk1aUDk4Nykx
+EzARBgNVBAsMCk1LMjJNWlA5ODcxFjAUBgNVBAoMDUdyZWdvcnkgU3pvcmMxCzAJ
+BgNVBAYTAlVTMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAs52TZuX8
+/9SVXNBr6Vz5CZOmis3lCpRsSP6pKPnIfK46DlOSoob6u/wALiPKOZJOYKnnbHuJ
+1pjvFEHif/eJkdfovu82bwAMJnFrbCGBHmOsqfuURfc5cfaIcpred9P0mFUVpu19
+4n74ZR2sjxJIFIMxJXgh7dSE4dKKokf/o5Orlb3d84i1/yY/ePSdnFIMotxrv0lv
+uZjdlIZE6ugoElueSyH1ZwF03UqQznJ1uuw1DSRyC0YD2l7paO+CKKpHAvsTSAZc
+j4X6qwx+aVgxiYcfl1z6nVDVv1m6+ChAOGyo06KpGPxFeON/Dp704UJyfyrRF7xD
+If/Cu+2ftMlLswIDAQABo4ICEzCCAg8wDAYDVR0TAQH/BAIwADAfBgNVHSMEGDAW
+gBRXF+2iz9x8mKEQ4Py+hy0s8uMXVDBABggrBgEFBQcBAQQ0MDIwMAYIKwYBBQUH
+MAGGJGh0dHA6Ly9vY3NwLmFwcGxlLmNvbS9vY3NwMDMtZGV2aWQwNjCCAR0GA1Ud
+IASCARQwggEQMIIBDAYJKoZIhvdjZAUBMIH+MIHDBggrBgEFBQcCAjCBtgyBs1Jl
+bGlhbmNlIG9uIHRoaXMgY2VydGlmaWNhdGUgYnkgYW55IHBhcnR5IGFzc3VtZXMg
+YWNjZXB0YW5jZSBvZiB0aGUgdGhlbiBhcHBsaWNhYmxlIHN0YW5kYXJkIHRlcm1z
+IGFuZCBjb25kaXRpb25zIG9mIHVzZSwgY2VydGlmaWNhdGUgcG9saWN5IGFuZCBj
+ZXJ0aWZpY2F0aW9uIHByYWN0aWNlIHN0YXRlbWVudHMuMDYGCCsGAQUFBwIBFipo
+dHRwOi8vd3d3LmFwcGxlLmNvbS9jZXJ0aWZpY2F0ZWF1dGhvcml0eS8wFgYDVR0l
+AQH/BAwwCgYIKwYBBQUHAwMwHQYDVR0OBBYEFJWxErKAkOUMhUHKIfurpWswr6OM
+MA4GA1UdDwEB/wQEAwIHgDAfBgoqhkiG92NkBgEhBBEMDzIwMjEwNDIyMDAwMDAw
+WjATBgoqhkiG92NkBgENAQH/BAIFADANBgkqhkiG9w0BAQsFAAOCAQEAGpHZefiX
+l5n79MZM8GFVs5oGJOdspORMFa9SxWa59LaBAWpkUbVtgic25CQtaIZddb7vgMpq
+uCqQIFiYz3MfdaPgKMqM1MGNVOw14Z4nM1z9CgLctBS7ie2ScKf9nJnbLCm2qCeS
+5A13mUagb7lwdzI3Z5G6JP3+ea46Kg0bY9c4TCAZr8v/vpBWktnBimuQ9Rz3PPTT
+HPCYuazSBKos0g3gNLgzGdQyZLDvyfyqJ3SvIAvGBYC1SxoGUB8RBeZuYLRQOylA
+72DfBd+bt1wASaSNTosSAauo3Sd3cvIwAtlTtWAT3ISZ36ygnbgwfaarz8Q04MDc
+4Y74EVg2IvFyLA==
+-----END CERTIFICATE-----
+
+
+```
+
+```
+$ rcodesign analyze-certificate --p12-file src/apple-codesign-testuser.p12 --p12-password incorrect
+? 1
+Error: incorrect password given when decrypting PFX data
+
+$ rcodesign analyze-certificate --p12-file src/apple-codesign-testuser.p12 --p12-password password123
+# Certificate 0
+
+Subject CN:                  Test User
+Issuer CN:                   Test User
+Subject is Issuer?:          true
+Team ID:                     <missing>
+SHA-1 fingerprint:           b1c7f1807bb9eb61ab3d13b0ffc12a363311dbd2
+SHA-256 fingerprint:         f2e635017332bcb96b44f8cc65c07f5141f5932599e706f66023314adf8b9d07
+Not Valid Before:            2021-04-22T21:51:28+00:00
+Not Valid After:             2022-04-22T21:51:28+00:00
+Key Algorithm:               RSA
+Signature Algorithm:         SHA-256 with RSA encryption
+Public Key Data:             MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApp0SntOtH7dgkQ1jIKrzgjW58VxqbRXpz/5sQp6AIulGS87IWMjLd/9k0+3X9+fKypMPADnbMb6CX3KgbKCJSNc2SI/g4tVg1HTo2wuVNpe1o/LaKMRZY+u/KvZBsN6gAtspayZAxYCSBxEQ7JndHq57Z+ZK4o/yT5LftOJ+LpJQk7pBMPbW6uHmYZWOMH119i7VBEtBNZhwwloAX7DlFGWBG3NtJ4HBTxwSvNkCNG04a+HK9OFuSO1vfYy5/6OqmQ5sKjgkEBWrud9TPp5hWCzrx0cGGYWprMDQ6ix2pCVp9dToecYiZOpNhgSAxioHU317M4Pf060tDUmsBBnykQIDAQAB
+Signed by Apple?:            false
+Guessed Certificate Profile: none
+Is Apple Root CA?:           false
+Is Apple Intermediate CA?:   false
+Apple Extended Key Usage Purpose Extensions:
+  - 1.3.6.1.5.5.7.3.3 (CodeSigning)
+Apple Code Signing Extensions:
+
+-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApp0SntOtH7dgkQ1jIKrz
+gjW58VxqbRXpz/5sQp6AIulGS87IWMjLd/9k0+3X9+fKypMPADnbMb6CX3KgbKCJ
+SNc2SI/g4tVg1HTo2wuVNpe1o/LaKMRZY+u/KvZBsN6gAtspayZAxYCSBxEQ7Jnd
+Hq57Z+ZK4o/yT5LftOJ+LpJQk7pBMPbW6uHmYZWOMH119i7VBEtBNZhwwloAX7Dl
+FGWBG3NtJ4HBTxwSvNkCNG04a+HK9OFuSO1vfYy5/6OqmQ5sKjgkEBWrud9TPp5h
+WCzrx0cGGYWprMDQ6ix2pCVp9dToecYiZOpNhgSAxioHU317M4Pf060tDUmsBBny
+kQIDAQAB
+-----END PUBLIC KEY-----
+
+-----BEGIN CERTIFICATE-----
+MIIDWTCCAkGgAwIBAgIBATANBgkqhkiG9w0BAQsFADBaMRIwEAYDVQQDDAlUZXN0
+IFVzZXIxEzARBgNVBAoMClB5T3hpZGl6ZXIxCzAJBgNVBAYTAlVTMSIwIAYJKoZI
+hvcNAQkBFhNzb21lb25lQGV4YW1wbGUuY29tMB4XDTIxMDQyMjIxNTEyOFoXDTIy
+MDQyMjIxNTEyOFowWjESMBAGA1UEAwwJVGVzdCBVc2VyMRMwEQYDVQQKDApQeU94
+aWRpemVyMQswCQYDVQQGEwJVUzEiMCAGCSqGSIb3DQEJARYTc29tZW9uZUBleGFt
+cGxlLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAKadEp7TrR+3
+YJENYyCq84I1ufFcam0V6c/+bEKegCLpRkvOyFjIy3f/ZNPt1/fnysqTDwA52zG+
+gl9yoGygiUjXNkiP4OLVYNR06NsLlTaXtaPy2ijEWWPrvyr2QbDeoALbKWsmQMWA
+kgcREOyZ3R6ue2fmSuKP8k+S37Tifi6SUJO6QTD21urh5mGVjjB9dfYu1QRLQTWY
+cMJaAF+w5RRlgRtzbSeBwU8cErzZAjRtOGvhyvThbkjtb32Muf+jqpkObCo4JBAV
+q7nfUz6eYVgs68dHBhmFqazA0OosdqQlafXU6HnGImTqTYYEgMYqB1N9ezOD39Ot
+LQ1JrAQZ8pECAwEAAaMqMCgwDgYDVR0PAQH/BAQDAgeAMBYGA1UdJQEB/wQMMAoG
+CCsGAQUFBwMDMA0GCSqGSIb3DQEBCwUAA4IBAQASENQJdugbU/zcaCU/JjBMQF+L
+IYlNqVRcV5c/CUo0sxMyEIbCQ+tRjsr6wS4Z/BqP4znveP8MChRQqTk+ldP9VtIF
+SXtB/HtT9V9XNdJ/R0aoGi//WCQXzS2gzsn9JQKOAQAOkYJg71puHWj1M3CPxxzv
+4beXq2t9J1hgtLOiM5AsbHRI8kTgM/J8GKGe0Dw/xgJgwaWPTZPmGtJhoEsFZUyY
+ywiSsc83dsllkjFA4MiADfAHdnW48/KSeK6qGetUm4VQImFbcgA0cZTzYdggnaHO
+YKYJwXPX2vI/4b+WyqrpQ3ToXGb66oowlD7e16zMfHFQ1Tp415bC3vjtKE/u
+-----END CERTIFICATE-----
+
+
+```

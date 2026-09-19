@@ -1,0 +1,228 @@
+```
+$ rcodesign debug-create-macho exe
+assuming default minimum version 11.0.0
+writing Mach-O to exe
+
+$ rcodesign debug-create-entitlements --get-task-allow entitlements.plist
+writing entitlements.plist
+
+$ cat entitlements.plist
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>get-task-allow</key>
+	<true/>
+</dict>
+</plist>
+$ rcodesign sign --entitlements-xml-path entitlements.plist exe exe.signed
+setting entitlements XML for main signing target from path entitlements.plist
+signing exe to exe.signed
+signing exe as a Mach-O binary
+setting binary identifier to exe
+parsing Mach-O
+writing Mach-O to exe.signed
+
+$ rcodesign print-signature-info exe.signed
+- path: exe.signed
+  file_size: 22544
+  file_sha256: 76362775999fdb91e4ee35c83e8b9b47cf4b30643fb7e1298096cd23e38676d0
+  entity:
+    mach_o:
+      macho_linkedit_start_offset: 16384 / 0x4000
+      macho_signature_start_offset: 16400 / 0x4010
+      macho_signature_end_offset: 17215 / 0x433f
+      macho_linkedit_end_offset: 22544 / 0x5810
+      macho_end_offset: 22544 / 0x5810
+      linkedit_signature_start_offset: 16 / 0x10
+      linkedit_signature_end_offset: 831 / 0x33f
+      linkedit_bytes_after_signature: 5329 / 0x14d1
+      signature:
+        superblob_length: 815 / 0x32f
+        blob_count: 5
+        blobs:
+        - slot: CodeDirectory (0)
+          magic: fade0c02
+          length: 476
+          sha1: b734525ced22c371f94c5db4f24d84db32a020fe
+          sha256: 6929e7e458738363e16107c68e454ab544ad31e501b5a4223bcf736124a40275
+        - slot: RequirementSet (2)
+          magic: fade0c01
+          length: 12
+          sha1: 3a75f6db058529148e14dd7ea1b4729cc09ec973
+          sha256: 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986
+        - slot: Entitlements (5)
+          magic: fade7171
+          length: 231
+          sha1: 609a70a1468d84bef2be0146d1f0a5ea1c839948
+          sha256: adea2675562421d85cc35e2c909ae27f33846eeb3b2b7c68017abd1b4b02f624
+        - slot: DER Entitlements (7)
+          magic: fade7172
+          length: 36
+          sha1: 1018e52606e45993b16da1c621ceec945b9d5226
+          sha256: 4d9925d24f1357a00429379f31f567cedfaa8101d58442e7864f923bfb708794
+        - slot: CMS Signature (65536)
+          magic: fade0b01
+          length: 8
+          sha1: 2a7254313aa41796079bb0e9d0f044345f69f98b
+          sha256: e6c83bc98a10348492c7d4d2378a54572ef29e1a5692ccd02b5e29f4b762d6a0
+        code_directory:
+          version: '0x20400'
+          flags: CodeSignatureFlags(ADHOC)
+          identifier: exe
+          digest_type: sha256
+          platform: 0
+          signed_entity_size: 16400
+          executable_segment_flags: ExecutableSegmentFlags(MAIN_BINARY | ALLOW_UNSIGNED)
+          code_digests_count: 5
+          slot_digests:
+          - 'Info (1): 0000000000000000000000000000000000000000000000000000000000000000'
+          - 'RequirementSet (2): 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986'
+          - 'Resources (3): 0000000000000000000000000000000000000000000000000000000000000000'
+          - 'Application (4): 0000000000000000000000000000000000000000000000000000000000000000'
+          - 'Entitlements (5): adea2675562421d85cc35e2c909ae27f33846eeb3b2b7c68017abd1b4b02f624'
+          - 'Rep Specific (6): 0000000000000000000000000000000000000000000000000000000000000000'
+          - 'DER Entitlements (7): 4d9925d24f1357a00429379f31f567cedfaa8101d58442e7864f923bfb708794'
+        entitlements_plist:
+        - <?xml version="1.0" encoding="UTF-8"?>
+        - <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        - <plist version="1.0">
+        - <dict>
+        - '  <key>get-task-allow</key>'
+        - '  <true/>'
+        - </dict>
+        - </plist>
+        entitlements_der_plist:
+        - <?xml version="1.0" encoding="UTF-8"?>
+        - <plist version="1.0">
+        - '  <dict>'
+        - '    <key>get-task-allow</key>'
+        - '    <true />'
+        - '  </dict>'
+        - </plist>
+        cms: null
+
+$ rcodesign debug-create-entitlements --get-task-allow --run-unsigned-code --debugger --dynamic-code-signing --skip-library-validation entitlements.plist
+writing entitlements.plist
+
+$ cat entitlements.plist
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>get-task-allow</key>
+	<true/>
+	<key>run-unsigned-code</key>
+	<true/>
+	<key>com.apple.private.cs.debugger</key>
+	<true/>
+	<key>dynamic-codesigning</key>
+	<true/>
+	<key>com.apple.private.skip-library-validation</key>
+	<true/>
+</dict>
+</plist>
+$ rcodesign sign --entitlements-xml-path entitlements.plist exe exe.signed
+setting entitlements XML for main signing target from path entitlements.plist
+signing exe to exe.signed
+signing exe as a Mach-O binary
+setting binary identifier to exe
+parsing Mach-O
+writing Mach-O to exe.signed
+
+$ rcodesign print-signature-info exe.signed
+- path: exe.signed
+  file_size: 22544
+  file_sha256: 430f7d90ca4ee8032a3449edc4bd653db9be9b25a2134bbfad6372572a45ae49
+  entity:
+    mach_o:
+      macho_linkedit_start_offset: 16384 / 0x4000
+      macho_signature_start_offset: 16400 / 0x4010
+      macho_signature_end_offset: 17545 / 0x4489
+      macho_linkedit_end_offset: 22544 / 0x5810
+      macho_end_offset: 22544 / 0x5810
+      linkedit_signature_start_offset: 16 / 0x10
+      linkedit_signature_end_offset: 1161 / 0x489
+      linkedit_bytes_after_signature: 4999 / 0x1387
+      signature:
+        superblob_length: 1145 / 0x479
+        blob_count: 5
+        blobs:
+        - slot: CodeDirectory (0)
+          magic: fade0c02
+          length: 476
+          sha1: 200aa4782ec54d3bee30812ceae2fda9cd9de682
+          sha256: 45935fd888a2c65f4fdb2aec0539d97b8d0048c42e1eb50a9087a6bedd6e1e56
+        - slot: RequirementSet (2)
+          magic: fade0c01
+          length: 12
+          sha1: 3a75f6db058529148e14dd7ea1b4729cc09ec973
+          sha256: 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986
+        - slot: Entitlements (5)
+          magic: fade7171
+          length: 425
+          sha1: 12d9b2e699e7ea852d20b29b6d428363cc919540
+          sha256: e49f5c5bbafe414f3e1061dbaa41d3f7bd618138870826ccd586fd3a004f5687
+        - slot: DER Entitlements (7)
+          magic: fade7172
+          length: 172
+          sha1: add4cf224f06fe52b4b1d6130516e9ef9e557f17
+          sha256: 901eb3ecea82e5ee82d092f460b76afea8daefd1b7b8014fe16c979bb62ac4d7
+        - slot: CMS Signature (65536)
+          magic: fade0b01
+          length: 8
+          sha1: 2a7254313aa41796079bb0e9d0f044345f69f98b
+          sha256: e6c83bc98a10348492c7d4d2378a54572ef29e1a5692ccd02b5e29f4b762d6a0
+        code_directory:
+          version: '0x20400'
+          flags: CodeSignatureFlags(ADHOC)
+          identifier: exe
+          digest_type: sha256
+          platform: 0
+          signed_entity_size: 16400
+          executable_segment_flags: ExecutableSegmentFlags(MAIN_BINARY | ALLOW_UNSIGNED | DEBUGGER | JIT | SKIP_LIBRARY_VALIDATION)
+          code_digests_count: 5
+          slot_digests:
+          - 'Info (1): 0000000000000000000000000000000000000000000000000000000000000000'
+          - 'RequirementSet (2): 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986'
+          - 'Resources (3): 0000000000000000000000000000000000000000000000000000000000000000'
+          - 'Application (4): 0000000000000000000000000000000000000000000000000000000000000000'
+          - 'Entitlements (5): e49f5c5bbafe414f3e1061dbaa41d3f7bd618138870826ccd586fd3a004f5687'
+          - 'Rep Specific (6): 0000000000000000000000000000000000000000000000000000000000000000'
+          - 'DER Entitlements (7): 901eb3ecea82e5ee82d092f460b76afea8daefd1b7b8014fe16c979bb62ac4d7'
+        entitlements_plist:
+        - <?xml version="1.0" encoding="UTF-8"?>
+        - <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        - <plist version="1.0">
+        - <dict>
+        - '  <key>get-task-allow</key>'
+        - '  <true/>'
+        - '  <key>run-unsigned-code</key>'
+        - '  <true/>'
+        - '  <key>com.apple.private.cs.debugger</key>'
+        - '  <true/>'
+        - '  <key>dynamic-codesigning</key>'
+        - '  <true/>'
+        - '  <key>com.apple.private.skip-library-validation</key>'
+        - '  <true/>'
+        - </dict>
+        - </plist>
+        entitlements_der_plist:
+        - <?xml version="1.0" encoding="UTF-8"?>
+        - <plist version="1.0">
+        - '  <dict>'
+        - '    <key>com.apple.private.cs.debugger</key>'
+        - '    <true />'
+        - '    <key>com.apple.private.skip-library-validation</key>'
+        - '    <true />'
+        - '    <key>dynamic-codesigning</key>'
+        - '    <true />'
+        - '    <key>get-task-allow</key>'
+        - '    <true />'
+        - '    <key>run-unsigned-code</key>'
+        - '    <true />'
+        - '  </dict>'
+        - </plist>
+        cms: null
+
+```

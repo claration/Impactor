@@ -1,0 +1,103 @@
+```
+$ rcodesign help smartcard-import
+Import a code signing certificate and key into a smartcard
+
+Usage: rcodesign[EXE] smartcard-import [OPTIONS]
+
+Options:
+  -C, --config-file <CONFIG_PATH>
+          Explicit configuration file to load.
+          
+          If provided, the default configuration files are not loaded, even if they exist.
+          
+          Can be specified multiple times. Files are loaded/merged in the order given.
+          
+          The special value `/dev/null` can be used to specify an empty/null config file. It can be used to short-circuit loading of default config files.
+
+      --existing-key
+          Re-use the existing private key in the smartcard slot
+
+      --dry-run
+          Don't actually perform the import
+
+  -P, --profile <PROFILE>
+          Configuration profile to load.
+          
+          If not specified, the implicit "default" profile is loaded.
+
+      --smartcard-slot <SLOT>
+          Smartcard slot number of signing certificate to use (9c is common)
+
+  -v, --verbose...
+          Increase logging verbosity. Can be specified multiple times
+
+      --smartcard-pin <SECRET>
+          Smartcard PIN used to unlock certificate
+          
+          If not provided, you will be prompted for a PIN as necessary.
+
+      --smartcard-pin-env <STRING>
+          Environment variable holding the smartcard PIN
+
+      --keychain-domain <DOMAIN>
+          (macOS only) Keychain domain to operate on
+          
+          [possible values: user, system, common, dynamic]
+
+      --keychain-fingerprint <SHA256 FINGERPRINT>
+          (macOS only) SHA-256 fingerprint of certificate in Keychain to use
+
+      --windows-store-name <STORE>
+          (Windows only) Windows Store to operate on
+          
+          [possible values: user, machine, service]
+
+      --windows-store-sha1-fingerprint <SHA1 FINGERPRINT>
+          (Windows only) SHA-1 fingerprint of certificate in Windows Store to use
+
+      --pem-file <PATH>
+          Path to file containing PEM encoded certificate/key data
+
+      --p12-file <PATH>
+          Path to a .p12/PFX file containing a certificate key pair
+
+      --p12-password <SECRET>
+          The password to use to open the --p12-file file
+
+      --p12-password-file <PATH>
+          Path to file containing password for opening --p12-file file
+
+      --remote-signing-url <URL>
+          URL of a remote code signing server
+
+      --remote-public-key <BASE64 ENCODED PUBLIC KEY>
+          Base64 encoded public key data describing the signer
+
+      --remote-public-key-pem-file <PATH>
+          PEM encoded public key data describing the signer
+
+      --remote-shared-secret <SECRET>
+          Shared secret used for remote signing
+
+      --remote-shared-secret-env <ENV VAR NAME>
+          Environment variable holding the shared secret used for remote signing
+
+      --certificate-der-file <PATH>
+          Path to file containing DER encoded certificate data
+
+      --touch-policy <TOUCH_POLICY>
+          Smartcard touch policy to protect key access
+          
+          [default: default]
+          [possible values: default, always, never, cached]
+
+      --pin-policy <PIN_POLICY>
+          Smartcard pin prompt policy to protect key access
+          
+          [default: default]
+          [possible values: default, never, once, always]
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+```

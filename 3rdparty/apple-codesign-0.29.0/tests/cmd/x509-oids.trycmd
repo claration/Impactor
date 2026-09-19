@@ -1,0 +1,43 @@
+```
+$ rcodesign x509-oids
+# Extended Key Usage (EKU) Extension OIDs
+
+1.3.6.1.5.5.7.3.3	CodeSigning
+1.2.840.113635.100.4.8	SafariDeveloper
+1.2.840.113635.100.4.9	ThirdPartyMacDeveloperInstaller
+1.2.840.113635.100.4.13	DeveloperIdInstaller
+
+# Code Signing Certificate Extension OIDs
+
+1.2.840.113635.100.6.1.1	AppleSigning
+1.2.840.113635.100.6.1.2	IPhoneDeveloper
+1.2.840.113635.100.6.1.3	IPhoneOsApplicationSigning
+1.2.840.113635.100.6.1.4	AppleDeveloperCertificateSubmission
+1.2.840.113635.100.6.1.5	SafariDeveloper
+1.2.840.113635.100.6.1.6	IPhoneOsVpnSigning
+1.2.840.113635.100.6.1.7	AppleMacAppSigningDevelopment
+1.2.840.113635.100.6.1.8	AppleMacAppSigningSubmission
+1.2.840.113635.100.6.1.9	AppleMacAppStoreCodeSigning
+1.2.840.113635.100.6.1.10	AppleMacAppStoreInstallerSigning
+1.2.840.113635.100.6.1.12	MacDeveloper
+1.2.840.113635.100.6.1.13	DeveloperIdApplication
+1.2.840.113635.100.6.1.33	DeveloperIdDate
+1.2.840.113635.100.6.1.14	DeveloperIdInstaller
+1.2.840.113635.100.6.1.16	ApplePayPassbookSigning
+1.2.840.113635.100.6.1.17	WebsitePushNotificationSigning
+1.2.840.113635.100.6.1.18	DeveloperIdKernel
+1.2.840.113635.100.6.1.25.1	TestFlight
+
+# Certificate Authority Certificate Extension OIDs
+
+1.2.840.113635.100.6.2.1	AppleWorldwideDeveloperRelations
+1.2.840.113635.100.6.2.3	AppleApplicationIntegration
+1.2.840.113635.100.6.2.6	DeveloperId
+1.2.840.113635.100.6.2.9	AppleTimestamp
+1.2.840.113635.100.6.2.11	DeveloperAuthentication
+1.2.840.113635.100.6.2.14	AppleApplicationIntegrationG3
+1.2.840.113635.100.6.2.15	AppleWorldwideDeveloperRelationsG2
+1.2.840.113635.100.6.2.19	AppleSoftwareUpdateCertification
+1.2.840.113635.100.6.2.31	AppleApplicationIntegrationG1
+
+```

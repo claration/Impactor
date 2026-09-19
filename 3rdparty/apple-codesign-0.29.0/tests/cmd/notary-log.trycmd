@@ -1,0 +1,41 @@
+```
+$ rcodesign help notary-log
+Fetch the notarization log for a previous submission
+
+Usage: rcodesign[EXE] notary-log [OPTIONS] <SUBMISSION_ID>
+
+Arguments:
+  <SUBMISSION_ID>
+          The ID of the previous submission to wait on
+
+Options:
+      --api-key-file <PATH>
+          Path to a JSON file containing the API Key
+
+  -C, --config-file <CONFIG_PATH>
+          Explicit configuration file to load.
+          
+          If provided, the default configuration files are not loaded, even if they exist.
+          
+          Can be specified multiple times. Files are loaded/merged in the order given.
+          
+          The special value `/dev/null` can be used to specify an empty/null config file. It can be used to short-circuit loading of default config files.
+
+      --api-issuer <API_ISSUER>
+          App Store Connect Issuer ID (likely a UUID)
+
+  -P, --profile <PROFILE>
+          Configuration profile to load.
+          
+          If not specified, the implicit "default" profile is loaded.
+
+      --api-key <API_KEY>
+          App Store Connect API Key ID
+
+  -v, --verbose...
+          Increase logging verbosity. Can be specified multiple times
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+```

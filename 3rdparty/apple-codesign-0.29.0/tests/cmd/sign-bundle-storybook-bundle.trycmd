@@ -1,0 +1,259 @@
+When signing a shallow bundle with storybook "bundles," the storybook
+bundles should not be signed.
+
+```
+$ rcodesign debug-create-macho MyApp.app/MyApp
+assuming default minimum version 11.0.0
+writing Mach-O to MyApp.app/MyApp
+
+$ rcodesign debug-create-info-plist --bundle-name MyApp MyApp.app/Info.plist
+writing MyApp.app/Info.plist
+
+$ mkdir -p MyApp.app/Base.lproj/Main.storyboardc
+$ touch MyApp.app/Base.lproj/Main.storyboardc/test.nib
+
+$ rcodesign debug-create-info-plist --empty --bundle-name ignored MyApp.app/Base.lproj/Main.storyboardc/Info.plist
+writing MyApp.app/Base.lproj/Main.storyboardc/Info.plist
+
+$ cat MyApp.app/Base.lproj/Main.storyboardc/Info.plist
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict/>
+</plist>
+$ touch MyApp.app/PkgInfo
+$ touch MyApp.app/embedded.mobileprovision
+
+$ rcodesign sign MyApp.app MyApp.app.signed
+signing MyApp.app to MyApp.app.signed
+signing bundle at MyApp.app
+signing bundle at MyApp.app into MyApp.app.signed
+signing main executable MyApp
+
+$ rcodesign debug-file-tree MyApp.app.signed
+d                      MyApp.app.signed/
+d                      MyApp.app.signed/Base.lproj
+d                      MyApp.app.signed/Base.lproj/Main.storyboardc
+f d0db6a79107b15f10e16 MyApp.app.signed/Base.lproj/Main.storyboardc/Info.plist
+f e3b0c44298fc1c149afb MyApp.app.signed/Base.lproj/Main.storyboardc/test.nib
+f 0a5902dc8e47f490d038 MyApp.app.signed/Info.plist
+f 1d11f3a2cb072f0c9969 MyApp.app.signed/MyApp
+f e3b0c44298fc1c149afb MyApp.app.signed/PkgInfo
+d                      MyApp.app.signed/_CodeSignature
+f dea493de64a991ac1fd6 MyApp.app.signed/_CodeSignature/CodeResources
+f e3b0c44298fc1c149afb MyApp.app.signed/embedded.mobileprovision
+
+$ rcodesign print-signature-info MyApp.app.signed
+- path: Base.lproj/Main.storyboardc/Info.plist
+  file_size: 180
+  file_sha256: d0db6a79107b15f10e169d17bc2ef3395631f5932cd2552a7422e82f31e3f413
+  entity: other
+- path: Base.lproj/Main.storyboardc/test.nib
+  file_size: 0
+  file_sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+  entity: other
+- path: Info.plist
+  file_size: 576
+  file_sha256: 0a5902dc8e47f490d03889d3593d17bddbf79e6c1f79494e20dd28f9459effa5
+  entity: other
+- path: MyApp
+  file_size: 22544
+  file_sha256: 1d11f3a2cb072f0c996981756ccb080e9f35a0cce03c46220eb198c0c97406e2
+  entity:
+    mach_o:
+      macho_linkedit_start_offset: 16384 / 0x4000
+      macho_signature_start_offset: 16400 / 0x4010
+      macho_signature_end_offset: 16821 / 0x41b5
+      macho_linkedit_end_offset: 22544 / 0x5810
+      macho_end_offset: 22544 / 0x5810
+      linkedit_signature_start_offset: 16 / 0x10
+      linkedit_signature_end_offset: 437 / 0x1b5
+      linkedit_bytes_after_signature: 5723 / 0x165b
+      signature:
+        superblob_length: 421 / 0x1a5
+        blob_count: 3
+        blobs:
+        - slot: CodeDirectory (0)
+          magic: fade0c02
+          length: 365
+          sha1: ab5c39d99e4374adec9ff318431e0ad8f4e1a132
+          sha256: 742baf721b17b851139efc4c6e8aba3089e100ab8b00c7a6db6379078a695d7f
+        - slot: RequirementSet (2)
+          magic: fade0c01
+          length: 12
+          sha1: 3a75f6db058529148e14dd7ea1b4729cc09ec973
+          sha256: 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986
+        - slot: CMS Signature (65536)
+          magic: fade0b01
+          length: 8
+          sha1: 2a7254313aa41796079bb0e9d0f044345f69f98b
+          sha256: e6c83bc98a10348492c7d4d2378a54572ef29e1a5692ccd02b5e29f4b762d6a0
+        code_directory:
+          version: '0x20400'
+          flags: CodeSignatureFlags(ADHOC)
+          identifier: com.example.mybundle
+          digest_type: sha256
+          platform: 0
+          signed_entity_size: 16400
+          executable_segment_flags: ExecutableSegmentFlags(MAIN_BINARY)
+          code_digests_count: 5
+          slot_digests:
+          - 'Info (1): 0a5902dc8e47f490d03889d3593d17bddbf79e6c1f79494e20dd28f9459effa5'
+          - 'RequirementSet (2): 987920904eab650e75788c054aa0b0524e6a80bfc71aa32df8d237a61743f986'
+          - 'Resources (3): dea493de64a991ac1fd6e9e9feab78408748cc96130c86bd0bb5989d86d9c39b'
+        cms: null
+- path: PkgInfo
+  file_size: 0
+  file_sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+  entity: other
+- path: _CodeSignature/CodeResources
+  file_size: 2631
+  file_sha256: dea493de64a991ac1fd6e9e9feab78408748cc96130c86bd0bb5989d86d9c39b
+  entity:
+    bundle_code_signature_file: !ResourcesXml
+    - <?xml version="1.0" encoding="UTF-8"?>
+    - <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+    - <plist version="1.0">
+    - <dict>
+    - '  <key>files</key>'
+    - '  <dict>'
+    - '    <key>Base.lproj/Main.storyboardc/Info.plist</key>'
+    - '    <data>'
+    - '    n9hnu0WwQx9uSvF9Zek1KUmSMvY='
+    - '    </data>'
+    - '    <key>Base.lproj/Main.storyboardc/test.nib</key>'
+    - '    <data>'
+    - '    2jmj7l5rSw0yVb/vlWAYkK/YBwk='
+    - '    </data>'
+    - '    <key>Info.plist</key>'
+    - '    <data>'
+    - '    Zb8cJrxjzN/maIzHh7BviPNDXvA='
+    - '    </data>'
+    - '    <key>PkgInfo</key>'
+    - '    <data>'
+    - '    2jmj7l5rSw0yVb/vlWAYkK/YBwk='
+    - '    </data>'
+    - '    <key>embedded.mobileprovision</key>'
+    - '    <data>'
+    - '    2jmj7l5rSw0yVb/vlWAYkK/YBwk='
+    - '    </data>'
+    - '  </dict>'
+    - '  <key>files2</key>'
+    - '  <dict>'
+    - '    <key>Base.lproj/Main.storyboardc/Info.plist</key>'
+    - '    <dict>'
+    - '      <key>hash2</key>'
+    - '      <data>'
+    - '      0NtqeRB7FfEOFp0XvC7zOVYx9ZMs0lUqdCLoLzHj9BM='
+    - '      </data>'
+    - '    </dict>'
+    - '    <key>Base.lproj/Main.storyboardc/test.nib</key>'
+    - '    <dict>'
+    - '      <key>hash2</key>'
+    - '      <data>'
+    - '      47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU='
+    - '      </data>'
+    - '    </dict>'
+    - '    <key>embedded.mobileprovision</key>'
+    - '    <dict>'
+    - '      <key>hash2</key>'
+    - '      <data>'
+    - '      47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU='
+    - '      </data>'
+    - '    </dict>'
+    - '  </dict>'
+    - '  <key>rules</key>'
+    - '  <dict>'
+    - '    <key>^.*</key>'
+    - '    <true/>'
+    - '    <key>^.*/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>optional</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1000</real>'
+    - '    </dict>'
+    - '    <key>^.*/.lproj/locversion.plist$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1100</real>'
+    - '    </dict>'
+    - '    <key>^Base/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>1010</real>'
+    - '    </dict>'
+    - '    <key>^version.plist$</key>'
+    - '    <true/>'
+    - '  </dict>'
+    - '  <key>rules2</key>'
+    - '  <dict>'
+    - '    <key>.*/.dSYM($|/)</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>11</real>'
+    - '    </dict>'
+    - '    <key>^(.*/)?/.DS_Store$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>2000</real>'
+    - '    </dict>'
+    - '    <key>^.*</key>'
+    - '    <true/>'
+    - '    <key>^.*/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>optional</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1000</real>'
+    - '    </dict>'
+    - '    <key>^.*/.lproj/locversion.plist$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>1100</real>'
+    - '    </dict>'
+    - '    <key>^Base/.lproj/</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>1010</real>'
+    - '    </dict>'
+    - '    <key>^Info/.plist$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^PkgInfo$</key>'
+    - '    <dict>'
+    - '      <key>omit</key>'
+    - '      <true/>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^embedded/.provisionprofile$</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '    <key>^version/.plist$</key>'
+    - '    <dict>'
+    - '      <key>weight</key>'
+    - '      <real>20</real>'
+    - '    </dict>'
+    - '  </dict>'
+    - </dict>
+    - </plist>
+    - ''
+- path: embedded.mobileprovision
+  file_size: 0
+  file_sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+  entity: other
+
+```
