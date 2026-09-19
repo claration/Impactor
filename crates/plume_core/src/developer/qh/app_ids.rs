@@ -4,15 +4,20 @@ use serde::Deserialize;
 use crate::Error;
 
 use super::{DeveloperSession, QHResponseMeta};
-use crate::developer::strip_invalid_chars;
+use crate::developer::{DeveloperPlatform, strip_invalid_chars};
 use crate::developer_endpoint;
 
 impl DeveloperSession {
-    pub async fn qh_list_app_ids(&self, team_id: &String) -> Result<AppIDsResponse, Error> {
+    pub async fn qh_list_app_ids(
+        &self,
+        team_id: &String,
+        platform: DeveloperPlatform,
+    ) -> Result<AppIDsResponse, Error> {
         let endpoint = developer_endpoint!("/QH65B2/ios/listAppIds.action");
 
         let mut body = Dictionary::new();
         body.insert("teamId".to_string(), Value::String(team_id.clone()));
+        platform.apply_to(&mut body);
 
         let response = self.qh_send_request(&endpoint, Some(body)).await?;
         let response_data: AppIDsResponse = plist::from_value(&Value::Dictionary(response))?;
@@ -25,6 +30,7 @@ impl DeveloperSession {
         team_id: &String,
         name: &String,
         identifier: &String,
+        platform: DeveloperPlatform,
     ) -> Result<AppIDResponse, Error> {
         let endpoint = developer_endpoint!("/QH65B2/ios/addAppId.action");
 
@@ -32,6 +38,7 @@ impl DeveloperSession {
         body.insert("teamId".to_string(), Value::String(team_id.clone()));
         body.insert("name".to_string(), Value::String(strip_invalid_chars(name)));
         body.insert("identifier".to_string(), Value::String(identifier.clone()));
+        platform.apply_to(&mut body);
 
         let response = self.qh_send_request(&endpoint, Some(body)).await?;
         let response_data: AppIDResponse = plist::from_value(&Value::Dictionary(response))?;
@@ -82,8 +89,9 @@ impl DeveloperSession {
         &self,
         team_id: &String,
         identifier: &String,
+        platform: DeveloperPlatform,
     ) -> Result<Option<AppID>, Error> {
-        let response_data = self.qh_list_app_ids(team_id).await?;
+        let response_data = self.qh_list_app_ids(team_id, platform).await?;
 
         let app_id = response_data
             .app_ids
@@ -98,11 +106,14 @@ impl DeveloperSession {
         team_id: &String,
         name: &String,
         identifier: &String,
+        platform: DeveloperPlatform,
     ) -> Result<AppID, Error> {
-        if let Some(app_id) = self.qh_get_app_id(team_id, identifier).await? {
+        if let Some(app_id) = self.qh_get_app_id(team_id, identifier, platform).await? {
             Ok(app_id)
         } else {
-            let response = self.qh_add_app_id(team_id, name, identifier).await?;
+            let response = self
+                .qh_add_app_id(team_id, name, identifier, platform)
+                .await?;
             Ok(response.app_id)
         }
     }

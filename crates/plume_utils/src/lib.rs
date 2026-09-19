@@ -5,6 +5,7 @@ mod options;
 mod package;
 mod signer;
 mod tweak;
+pub mod wireless;
 
 use std::path::Path;
 
@@ -53,6 +54,16 @@ pub enum Error {
     Idevice(#[from] idevice::IdeviceError),
     #[error("Codesign error: {0}")]
     Codesign(#[from] plume_core::AppleCodesignError),
+    // Wireless pairing
+    #[error("mDNS error: {0}")]
+    Mdns(#[from] mdns_sd::Error),
+    #[error("The device did not accept the pairing, it needs to be paired again")]
+    PairingNotAccepted,
+    #[error("No stored pairing for device: {0}")]
+    PairingNotFound(String),
+    #[error("Refusing to use an unsafe device identifier as a file name: {0}")]
+    PairingInvalidUdid(String),
+
     #[error("Other error: {0}")]
     Other(String),
     #[error("Image error: {0}")]
