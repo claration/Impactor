@@ -66,13 +66,24 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y mingw-w64 nasm
 
-      - name: Build
-        shell: bash
+      - name: Build binaries (Linux cross-compile)
+        if: matrix.arch != 'arm64'
         run: |
           cargo build --bins --workspace --release --target ${{ matrix.target }}
           mkdir -p dist
           cp target/${{ matrix.target }}/release/plumeimpactor.exe dist/Impactor-windows-${{ matrix.arch }}-portable.exe
           cp target/${{ matrix.target }}/release/plumesign.exe dist/plumesign-windows-${{ matrix.arch }}.exe
+
+      - name: Build binaries (Windows ARM64 native)
+        if: matrix.arch == 'arm64'
+        env:
+          CARGO_BUILD_RUSTC_WRAPPER: "./.cargo/rustc-wrapper.bat"
+        shell: pwsh
+        run: |
+          cargo build --bins --workspace --release --target ${{ matrix.target }}
+          New-Item -ItemType Directory -Force -Path dist
+          Copy-Item "target/${{ matrix.target }}/release/plumeimpactor.exe" "dist/Impactor-windows-${{ matrix.arch }}-portable.exe"
+          Copy-Item "target/${{ matrix.target }}/release/plumesign.exe" "dist/plumesign-windows-${{ matrix.arch }}.exe"
 
       - name: Upload Bundles
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
