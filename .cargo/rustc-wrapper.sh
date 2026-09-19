@@ -2,7 +2,7 @@
 
 # Redirect all output to log file except for the final exec'd command
 LOG_FILE="/tmp/patch-log.txt"
-exec 3>&1 4>&2
+exec 9>&1 10>&2
 exec >>"$LOG_FILE" 2>&1
 
 set -eu
@@ -14,7 +14,7 @@ TARGET_PATCHED_DIR="$SCRIPT_DIR/target/patched-crates"
 
 # --- No patching needed - run original args ---
 if [ -z "${CARGO_PKG_NAME:-}" ] || [ -z "${CARGO_MANIFEST_DIR:-}" ]; then
-  exec 1>&3 2>&4
+  exec 1>&9 2>&10
   exec "$@"
 fi
 
@@ -49,9 +49,9 @@ if [ -d "$PATCH_DIR" ]; then
     new_args+=("${arg//$CARGO_MANIFEST_DIR/$PATCHED_SRC}")
   done
 
-  exec 1>&3 2>&4
+  exec 1>&9 2>&10
   exec "${new_args[@]}"
 else
-  exec 1>&3 2>&4
+  exec 1>&9 2>&10
   exec "$@"
 fi
