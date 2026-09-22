@@ -5,7 +5,11 @@ use anyhow::{Ok, Result};
 use clap::{Args, Subcommand};
 use dialoguer::Select;
 
-use plume_core::{AnisetteConfiguration, auth::Account, developer::DeveloperSession};
+use plume_core::{
+    AnisetteConfiguration,
+    auth::Account,
+    developer::{DeveloperPlatform, DeveloperSession},
+};
 use plume_store::AccountStore;
 
 use crate::get_data_path;
@@ -267,7 +271,10 @@ async fn devices(args: DevicesArgs) -> Result<()> {
         args.team_id.unwrap()
     };
 
-    let p = session.qh_list_devices(&team_id).await?.devices;
+    let p = session
+        .qh_list_devices(&team_id, DeveloperPlatform::default())
+        .await?
+        .devices;
 
     log::info!("{:#?}", p);
 
@@ -284,7 +291,12 @@ async fn register_device(args: RegisterDeviceArgs) -> Result<()> {
     };
 
     let p = session
-        .qh_add_device(&team_id, &args.name, &args.udid)
+        .qh_add_device(
+            &team_id,
+            &args.name,
+            &args.udid,
+            DeveloperPlatform::default(),
+        )
         .await?
         .device;
 

@@ -3,6 +3,7 @@ use clap::{Parser, Subcommand};
 pub mod account;
 pub mod device;
 pub mod macho;
+pub mod pair;
 pub mod sign;
 
 #[derive(Debug, Parser)]
@@ -29,4 +30,6 @@ pub enum Commands {
     Account(account::AccountArgs),
     /// Device management commands
     Device(device::DeviceArgs),
+    /// Pair with a device over the network
+    Pair(pair::PairArgs),
 }

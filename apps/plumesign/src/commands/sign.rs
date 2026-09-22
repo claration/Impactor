@@ -127,6 +127,7 @@ pub async fn execute(args: SignArgs) -> Result<()> {
                 Some(Device {
                     name: "My Mac".to_string(),
                     udid: String::new(),
+                    product_type: None,
                     device_id: 0,
                     usbmuxd_device: None,
                     is_mac: true,
@@ -143,6 +144,11 @@ pub async fn execute(args: SignArgs) -> Result<()> {
         None
     };
 
+    let platform = device
+        .as_ref()
+        .map(|dev| dev.developer_platform())
+        .unwrap_or_default();
+
     if let Some((session, team_id)) = team_id_opt {
         signer
             .modify_bundle(&bundle, &Some(team_id.clone()))
@@ -151,12 +157,12 @@ pub async fn execute(args: SignArgs) -> Result<()> {
         if let Some(ref dev) = device {
             log::info!("Registering device: {} ({})", dev.name, dev.udid);
             session
-                .qh_ensure_device(&team_id, &dev.name, &dev.udid)
+                .qh_ensure_device(&team_id, &dev.name, &dev.udid, platform)
                 .await?;
         }
 
         signer
-            .register_bundle(&bundle, &session, &team_id, false)
+            .register_bundle(&bundle, &session, &team_id, false, platform)
             .await?;
         signer.sign_bundle(&bundle).await?;
 

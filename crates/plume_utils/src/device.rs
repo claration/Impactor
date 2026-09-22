@@ -12,6 +12,7 @@ use idevice::usbmuxd::{Connection, UsbmuxdAddr, UsbmuxdDevice};
 use idevice::utils::installation;
 use idevice::{IdeviceService, RemoteXpcClient};
 use plume_core::MobileProvision;
+use plume_core::developer::DeveloperPlatform;
 
 use crate::Error;
 use crate::options::SignerAppReal;
@@ -39,6 +40,7 @@ macro_rules! get_dict_string {
 pub struct Device {
     pub name: String,
     pub udid: String,
+    pub product_type: Option<String>,
     pub device_id: u32,
     pub usbmuxd_device: Option<UsbmuxdDevice>,
     // On x86_64 macs, `is_mac` variable should never be true
@@ -48,12 +50,13 @@ pub struct Device {
 
 impl Device {
     pub async fn new(usbmuxd_device: UsbmuxdDevice) -> Self {
-        let name = Self::get_name_from_usbmuxd_device(&usbmuxd_device)
+        let (name, product_type) = Self::get_info_from_usbmuxd_device(&usbmuxd_device)
             .await
             .unwrap_or_default();
 
         Device {
             name,
+            product_type,
             udid: usbmuxd_device.udid.clone(),
             device_id: usbmuxd_device.device_id.clone(),
             usbmuxd_device: Some(usbmuxd_device),
@@ -61,12 +64,35 @@ impl Device {
         }
     }
 
-    async fn get_name_from_usbmuxd_device(device: &UsbmuxdDevice) -> Result<String, Error> {
+    async fn get_info_from_usbmuxd_device(
+        device: &UsbmuxdDevice,
+    ) -> Result<(String, Option<String>), Error> {
         let mut lockdown =
             LockdownClient::connect(&device.to_provider(UsbmuxdAddr::default(), CONNECTION_LABEL))
                 .await?;
         let values = lockdown.get_value(None, None).await?;
-        Ok(get_dict_string!(values, "DeviceName"))
+        let product_type = get_dict_string!(values, "ProductType");
+
+        Ok((
+            get_dict_string!(values, "DeviceName"),
+            (!product_type.is_empty()).then_some(product_type),
+        ))
+    }
+
+    /// tvOS is identified by product type: `DeviceClass` is not returned by
+    /// lockdown before a session is established.
+    pub fn is_tvos(&self) -> bool {
+        self.product_type
+            .as_deref()
+            .is_some_and(|product_type| product_type.starts_with("AppleTV"))
+    }
+
+    pub fn developer_platform(&self) -> DeveloperPlatform {
+        if self.is_tvos() {
+            DeveloperPlatform::TvOs
+        } else {
+            DeveloperPlatform::IOs
+        }
     }
 
     pub async fn installed_apps(&self) -> Result<Vec<SignerAppReal>, Error> {
